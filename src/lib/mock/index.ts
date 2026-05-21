@@ -60,7 +60,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: true, viewCount: 8420, wishlistCount: 312,
     description: "One of the most coveted references in modern horology. Blue sunburst dial, full set. 2019, pristine condition.",
     attributes: { Brand: "Patek Philippe", Model: "Nautilus", Reference: "5711/1A-010", Year: "2019", Material: "Steel", Diameter: "40mm" },
-    images: ["https://images.unsplash.com/photo-1548171915-f72d8e2ef7e8?w=800&q=80"],
+    images: ["https://picsum.photos/seed/watch-01/800/600"],
   },
   {
     id: "p02", slug: "rolex-daytona-white",
@@ -73,7 +73,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: false, viewCount: 5210, wishlistCount: 198,
     description: "Ceramic bezel Daytona in steel. White Panda dial. Full set, 2021. One of the most liquid watches on the secondary market.",
     attributes: { Brand: "Rolex", Model: "Daytona", Reference: "116500LN", Year: "2021", Material: "Oystersteel", Diameter: "40mm" },
-    images: ["https://images.unsplash.com/photo-1547996160-81dfa63595aa?w=800&q=80"],
+    images: ["https://picsum.photos/seed/watch-02/800/600"],
   },
   {
     id: "p03", slug: "ap-royal-oak-blue",
@@ -86,7 +86,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: true, viewCount: 7130, wishlistCount: 267,
     description: "Jumbo Extra-Thin in steel with blue tapisserie dial. 2022, full set. The most wearable Royal Oak ever made.",
     attributes: { Brand: "Audemars Piguet", Model: "Royal Oak", Reference: "15500ST", Year: "2022", Material: "Steel", Diameter: "41mm" },
-    images: ["https://images.unsplash.com/photo-1622434641406-a158123450f9?w=800&q=80"],
+    images: ["https://picsum.photos/seed/watch-03/800/600"],
   },
   {
     id: "p04", slug: "richard-mille-mclaren",
@@ -99,7 +99,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: false, viewCount: 9820, wishlistCount: 441,
     description: "Flyback chronograph with McLaren orange accents. Limited to 500 pieces. Full set, 2020. Titanium case.",
     attributes: { Brand: "Richard Mille", Model: "RM 11-03", Variant: "McLaren", Year: "2020", Material: "Titanium", Diameter: "49mm" },
-    images: ["https://images.unsplash.com/photo-1523170335258-f5ed11844a49?w=800&q=80"],
+    images: ["https://picsum.photos/seed/watch-04/800/600"],
   },
   {
     id: "p05", slug: "rolex-gmt-pepsi",
@@ -112,7 +112,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: false, isTrending: true, viewCount: 4720, wishlistCount: 183,
     description: 'The "Pepsi" GMT on Jubilee bracelet. 2022, full set. No waiting list required.',
     attributes: { Brand: "Rolex", Model: "GMT-Master II", Reference: "126710BLRO", Year: "2022", Bracelet: "Jubilee", Diameter: "40mm" },
-    images: ["https://images.unsplash.com/photo-1614164185128-e4ec99c436d7?w=800&q=80"],
+    images: ["https://picsum.photos/seed/watch-05/800/600"],
   },
 
   // ── Fine Art ──────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: true, viewCount: 12400, wishlistCount: 521,
     description: "Acrylic on canvas, 48\" × 48\". Signed and dated verso 2021. COA from the artist's studio. Exhibited at KAWS TOKYO FIRST.",
     attributes: { Artist: "KAWS", Year: "2021", Medium: "Acrylic on canvas", Dimensions: "48×48 inches", Signed: "Yes" },
-    images: ["https://images.unsplash.com/photo-1578926375605-eaf7559b1458?w=800&q=80"],
+    images: ["https://picsum.photos/seed/art-01/800/600"],
   },
   {
     id: "p07", slug: "banksy-girl-balloon",
@@ -140,7 +140,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: true, viewCount: 18200, wishlistCount: 740,
     description: "Signed screen print, red edition. Pest Control COA. One of 150 signed copies. Framed under conservation glass.",
     attributes: { Artist: "Banksy", Year: "2004", Medium: "Screen print", Edition: "Signed Red", "Pest Control COA": "Yes" },
-    images: ["https://images.unsplash.com/photo-1577083552431-6e5fd01988ec?w=800&q=80"],
+    images: ["https://picsum.photos/seed/art-02/800/600"],
   },
   {
     id: "p08", slug: "basquiat-warrior-lithograph",
@@ -153,7 +153,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: false, isTrending: false, viewCount: 6320, wishlistCount: 218,
     description: "Rare signed lithograph, edition 12/50. Published 1983 by Annina Nosei. Full provenance documentation.",
     attributes: { Artist: "Jean-Michel Basquiat", Year: "1983", Medium: "Lithograph", Edition: "12/50", Signed: "Yes" },
-    images: ["https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&q=80"],
+    images: ["https://picsum.photos/seed/art-03/800/600"],
   },
   {
     id: "p09", slug: "koons-balloon-dog-blue",
@@ -166,7 +166,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: false, viewCount: 5920, wishlistCount: 231,
     description: "Blue porcelain, edition 2298/2300. Unique gift box with COA. From the 2001 collaboration with Bernardaud.",
     attributes: { Artist: "Jeff Koons", Year: "2001", Medium: "Limoges porcelain", Edition: "2298/2300", Color: "Blue" },
-    images: ["https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80"],
+    images: ["https://picsum.photos/seed/art-04/800/600"],
   },
 
   // ── Designer ──────────────────────────────────────────────────────
@@ -181,7 +181,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: true, viewCount: 9820, wishlistCount: 398,
     description: "Stunning electric blue Togo leather with palladium hardware. Full set with receipt. Authenticated by Entrupy.",
     attributes: { Brand: "Hermès", Model: "Birkin 30", Color: "Bleu Électrique", Leather: "Togo", Hardware: "Palladium", Year: "2022" },
-    images: ["https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800&q=80"],
+    images: ["https://picsum.photos/seed/bag-01/800/600"],
   },
   {
     id: "p11", slug: "chanel-classic-flap-black",
@@ -194,7 +194,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: false, isTrending: true, viewCount: 6340, wishlistCount: 254,
     description: "Timeless black caviar leather with gold hardware. Series 30 (2021-22). Includes dustbag, box, and authenticity card.",
     attributes: { Brand: "Chanel", Model: "Classic Flap", Size: "Medium", Color: "Black", Leather: "Caviar", Hardware: "Gold" },
-    images: ["https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&q=80"],
+    images: ["https://picsum.photos/seed/bag-02/800/600"],
   },
   {
     id: "p12", slug: "hermes-kelly-28-rouge",
@@ -207,7 +207,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: false, viewCount: 7420, wishlistCount: 318,
     description: "Rare rouge casaque epsom leather with gold hardware. Full set, receipt. 2021. Extremely hard to source at retail.",
     attributes: { Brand: "Hermès", Model: "Kelly 28", Style: "Sellier", Color: "Rouge Casaque", Leather: "Epsom", Hardware: "Gold" },
-    images: ["https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&q=80"],
+    images: ["https://picsum.photos/seed/bag-03/800/600"],
   },
   {
     id: "p13", slug: "bottega-cassette-cobalt",
@@ -220,7 +220,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: false, isTrending: true, viewCount: 4180, wishlistCount: 162,
     description: "Intrecciato weave in cobalt. Daniel Lee-era piece, 2020. Includes dustbag. Interior pristine.",
     attributes: { Brand: "Bottega Veneta", Model: "Cassette", Color: "Cobalt", Material: "Intrecciato leather", Era: "Daniel Lee" },
-    images: ["https://images.unsplash.com/photo-1594938298603-c8148c4b3bf4?w=800&q=80"],
+    images: ["https://picsum.photos/seed/bag-04/800/600"],
   },
 
   // ── Rare Items ────────────────────────────────────────────────────
@@ -235,7 +235,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: true, viewCount: 21400, wishlistCount: 890,
     description: "The holy grail of basketball cards. PSA 10 GEM MINT. Stored in climate-controlled vault. Cert #48291044.",
     attributes: { Type: "Trading Card", Player: "Michael Jordan", Year: "1986", Set: "Fleer", Card: "#57", Grade: "PSA 10" },
-    images: ["https://images.unsplash.com/photo-1585559700398-1385b3a8aeb6?w=800&q=80"],
+    images: ["https://picsum.photos/seed/rare-01/800/600"],
   },
   {
     id: "p15", slug: "nike-air-mag-2016",
@@ -248,7 +248,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: true, viewCount: 15820, wishlistCount: 670,
     description: "The self-lacing Air Mag from 2016. Charity auction piece. Original packaging, 100% authenticated. StockX verified.",
     attributes: { Brand: "Nike", Model: "Air Mag", Year: "2016", Size: "US 10", "Self-Lacing": "Yes", Authenticated: "StockX" },
-    images: ["https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80"],
+    images: ["https://picsum.photos/seed/rare-02/800/600"],
   },
   {
     id: "p16", slug: "pokemon-charizard-psa9",
@@ -261,7 +261,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: true, viewCount: 12400, wishlistCount: 521,
     description: "Base set 1st edition Charizard (4/102). PSA 9 MINT. The most iconic trading card in Pokémon history.",
     attributes: { Franchise: "Pokémon", Card: "Charizard", Set: "Base Set", Edition: "1st Edition", Number: "4/102", Grade: "PSA 9" },
-    images: ["https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&q=80"],
+    images: ["https://picsum.photos/seed/rare-03/800/600"],
   },
   {
     id: "p17", slug: "roman-aureus-nero",
@@ -274,7 +274,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: false, isTrending: true, viewCount: 5120, wishlistCount: 198,
     description: "Beautifully preserved gold aureus of Emperor Nero, 64 AD. PCGS Ancients MS Strike 5/5, Surface 4/5. Full flan.",
     attributes: { Type: "Ancient Coin", Denomination: "Aureus", Emperor: "Nero", Year: "64 AD", Grade: "PCGS Ancients MS", Strike: "5/5" },
-    images: ["https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80"],
+    images: ["https://picsum.photos/seed/rare-04/800/600"],
   },
 
   // ── Jewellery ─────────────────────────────────────────────────────
@@ -289,7 +289,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: true, viewCount: 6820, wishlistCount: 278,
     description: "Vintage Alhambra long necklace, 20 motifs, mother-of-pearl in yellow gold. Full set with COA. Rare find.",
     attributes: { Brand: "Van Cleef & Arpels", Model: "Vintage Alhambra", Motifs: "20", Material: "Mother of Pearl", Metal: "18k Yellow Gold" },
-    images: ["https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&q=80"],
+    images: ["https://picsum.photos/seed/jewel-01/800/600"],
   },
   {
     id: "p19", slug: "fancy-blue-diamond-ring",
@@ -302,7 +302,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: false, viewCount: 9420, wishlistCount: 384,
     description: "GIA Fancy Blue, VS1, 8.52ct cushion-cut diamond set in platinum. GIA Certificate #5191234812. Investment grade.",
     attributes: { Weight: "8.52ct", Color: "Fancy Blue", Clarity: "VS1", Cut: "Cushion", Setting: "Platinum", "GIA Cert": "#5191234812" },
-    images: ["https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&q=80"],
+    images: ["https://picsum.photos/seed/jewel-02/800/600"],
   },
   {
     id: "p20", slug: "cartier-love-bracelet",
@@ -315,7 +315,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: false, isTrending: true, viewCount: 4820, wishlistCount: 192,
     description: "Classic Love bracelet in 18k yellow gold, size 17. Original Cartier box and screwdriver. 2020.",
     attributes: { Brand: "Cartier", Model: "Love Bracelet", Metal: "18k Yellow Gold", Size: "17", Year: "2020" },
-    images: ["https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=800&q=80"],
+    images: ["https://picsum.photos/seed/jewel-03/800/600"],
   },
 
   // ── Collectibles ──────────────────────────────────────────────────
@@ -330,7 +330,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: true, isTrending: true, viewCount: 8120, wishlistCount: 324,
     description: "KAWS × Medicom BE@RBRICK 1000%. Black and white colorway. Opened but never displayed. Box 9/10.",
     attributes: { Brand: "Medicom Toy", Model: "BE@RBRICK", Artist: "KAWS", Size: "1000%", Colorway: "Black & White" },
-    images: ["https://images.unsplash.com/photo-1631134786026-c1f3f8be3f63?w=800&q=80"],
+    images: ["https://picsum.photos/seed/collect-01/800/600"],
   },
   {
     id: "p22", slug: "nike-dunk-travis-jackboys",
@@ -343,7 +343,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: false, isTrending: true, viewCount: 9840, wishlistCount: 418,
     description: "DS in original box. Size US 10. GOAT authenticated. Worn by Travis Scott during the Jackboys album drop event.",
     attributes: { Brand: "Nike", Model: "SB Dunk Low", Collab: "Travis Scott × Jackboys", Size: "US 10", Authenticated: "GOAT" },
-    images: ["https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80"],
+    images: ["https://picsum.photos/seed/rare-02/800/600"],
   },
   {
     id: "p23", slug: "supreme-lv-box-logo-tee",
@@ -356,7 +356,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     isFeatured: false, isTrending: true, viewCount: 4820, wishlistCount: 182,
     description: "Supreme × Louis Vuitton SS17 collaboration tee. Size L. Worn once. Museum-quality archive piece.",
     attributes: { Brand: "Supreme", Collab: "Louis Vuitton", Season: "SS17", Type: "T-Shirt", Size: "L" },
-    images: ["https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80"],
+    images: ["https://picsum.photos/seed/collect-03/800/600"],
   },
 ]
 

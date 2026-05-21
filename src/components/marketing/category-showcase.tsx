@@ -23,7 +23,7 @@ const categories = [
     description: "Contemporary prints & originals",
     gradient: "from-pink-500/20 to-pink-900/10",
     emoji: "🖼",
-    href: "/browse?category=art",
+    href: "/browse?category=fine-art",
     span: "",
   },
   {
@@ -43,7 +43,7 @@ const categories = [
     description: "One-of-a-kind museum-quality pieces",
     gradient: "from-emerald-500/20 to-emerald-900/10",
     emoji: "💎",
-    href: "/browse?category=rare",
+    href: "/browse?category=rare-items",
     span: "",
   },
   {
@@ -53,7 +53,7 @@ const categories = [
     description: "Diamonds, sapphires, estate pieces",
     gradient: "from-sky-500/20 to-sky-900/10",
     emoji: "💍",
-    href: "/browse?category=jewelry",
+    href: "/browse?category=jewellery",
     span: "lg:col-span-2",
   },
 ]

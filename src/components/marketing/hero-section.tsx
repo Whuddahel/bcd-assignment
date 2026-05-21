@@ -163,7 +163,7 @@ export function HeroSection() {
             className="flex flex-col items-start"
           >
             {/* Live ticker */}
-            <motion.div variants={fadeUp} className="mb-6 w-full max-w-sm">
+            <motion.div variants={fadeUp} className="mb-6 w-full max-w-xl">
               <LiveTicker />
             </motion.div>
 
@@ -271,7 +271,7 @@ export function HeroSection() {
             </div>
 
             {/* Second card — art piece */}
-            <div style={{ position: "absolute", top: "8%", right: "2%" }}>
+            <div style={{ position: "absolute", top: "8%", right: "10%" }}>
               <ProductCardHero
                 title="Banksy 'Girl with Balloon'"
                 price="$95,000"

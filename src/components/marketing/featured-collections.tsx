@@ -30,7 +30,7 @@ const collections = [
     tag: "New arrivals",
     gradient: "from-pink-600/30 via-pink-900/20 to-midnight-100",
     accentColor: "bg-pink-500",
-    href: "/browse?category=art",
+    href: "/browse?category=fine-art",
     items: [
       { name: "KAWS Companion",   price: "$18,500" },
       { name: "Banksy Print #12", price: "$24,000" },
