@@ -117,7 +117,10 @@ export function ProductCard({ product, index = 0, wishlistDefault = false }: Pro
                   alt={product.title}
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  className="object-cover opacity-70 transition-transform duration-700 group-hover:scale-110"
+                  className="object-cover opacity-85 transition-all duration-700 group-hover:scale-110"
+                  priority={index < 4}
+                  placeholder="blur"
+                  blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOCIgaGVpZ2h0PSI4IiB2aWV3Qm94PSIwIDAgOCA4IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiMyMDE0MzAiLz48L3N2Zz4="
                   onError={() => setImgError(true)}
                 />
               ) : null}
