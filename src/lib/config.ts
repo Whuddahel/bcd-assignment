@@ -14,6 +14,12 @@ export const hasStripe = Boolean(
 
 export const hasResend = Boolean(env.RESEND_API_KEY)
 
+// True when server-side code should read/write real Supabase rows instead of
+// the static mock catalog. Kept as a single source of truth so price
+// resolution (checkout) and persistence (webhook) never disagree about which
+// product ids are valid.
+export const useLiveData = hasSupabase && !isDevelopmentMode
+
 export const appConfig = {
   name: "Aureon",
   tagline: "Own the Rare",

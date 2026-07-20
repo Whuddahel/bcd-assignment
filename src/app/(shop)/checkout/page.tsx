@@ -6,19 +6,30 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 import {
   ArrowLeft, ArrowRight, CheckCircle, Shield, Lock, MapPin, CreditCard,
-  Package, ChevronRight,
+  Package, ChevronRight, AlertCircle,
 } from "lucide-react"
+import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
 import { GradientText } from "@/components/brand/gradient-text"
 import { useCartStore } from "@/stores/cart-store"
 import { formatPrice, cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { getStripeBrowserClient } from "@/lib/stripe/client"
+
+// Direct process.env access so Next.js can statically inline this at build time —
+// values pulled through the shared env/config helpers are not reliably available
+// inside client bundles.
+const STRIPE_ENABLED = Boolean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+const stripePromise = STRIPE_ENABLED ? getStripeBrowserClient() : null
 
 type Step = "address" | "payment" | "review"
+type Address = {
+  name: string; email: string; phone: string
+  line1: string; city: string; state: string; postal: string; country: string
+}
 
 const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number]
 
@@ -113,21 +124,16 @@ function OrderSummary() {
   )
 }
 
-export default function CheckoutPage() {
-  const router = useRouter()
-  const { items, clearCart, totalPrice } = useCartStore()
-  const [step, setStep] = useState<Step>("address")
-  const [processing, setProcessing] = useState(false)
-
-  const [address, setAddress] = useState({
-    name: "Emma Wilson", email: "buyer1@aureon.io", phone: "+44 20 7946 0958",
-    line1: "14 Kensington Gardens", city: "London", state: "", postal: "W8 4PT", country: "GB",
-  })
-  const [card, setCard] = useState({
-    number: "4242 4242 4242 4242", expiry: "12/28", cvc: "123", name: "Emma Wilson",
-  })
-
-  function addrField(id: keyof typeof address, label: string, colSpan = 1) {
+function AddressStep({
+  address, setAddress, loading, error, onContinue,
+}: {
+  address: Address
+  setAddress: React.Dispatch<React.SetStateAction<Address>>
+  loading: boolean
+  error: string | null
+  onContinue: () => void
+}) {
+  function field(id: keyof Address, label: string, colSpan = 1) {
     return (
       <div className={cn("space-y-1.5", colSpan === 2 && "sm:col-span-2")}>
         <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
@@ -140,6 +146,232 @@ export default function CheckoutPage() {
       </div>
     )
   }
+
+  return (
+    <motion.div
+      key="address"
+      initial={{ opacity: 0, x: 16 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -16 }}
+      transition={{ duration: 0.3, ease: EASE }}
+    >
+      <div className="glass-card rounded-2xl p-6">
+        <h2 className="mb-5 flex items-center gap-2 font-semibold text-foreground">
+          <MapPin className="h-4 w-4 text-violet-400" />
+          Shipping address
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {field("name",   "Full name",  2)}
+          {field("email",  "Email",      2)}
+          {field("phone",  "Phone",      2)}
+          {field("line1",  "Address",    2)}
+          {field("city",   "City")}
+          {field("postal", "Postal code")}
+          {field("country","Country")}
+        </div>
+      </div>
+
+      {error && (
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs text-red-400">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {error}
+        </div>
+      )}
+
+      <div className="mt-6 flex justify-between">
+        <div />
+        <Button
+          className="gradient-brand btn-glow gap-2 border-0 text-white hover:opacity-90"
+          onClick={onContinue}
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white"
+              />
+              Preparing payment…
+            </>
+          ) : (
+            <>Continue to payment <ArrowRight className="h-4 w-4" /></>
+          )}
+        </Button>
+      </div>
+    </motion.div>
+  )
+}
+
+// ── Real Stripe payment flow (mounted once a PaymentIntent client_secret exists) ──
+
+function RealPaymentStep({ onBack, onContinue }: { onBack: () => void; onContinue: () => void }) {
+  return (
+    <motion.div
+      key="payment"
+      initial={{ opacity: 0, x: 16 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -16 }}
+      transition={{ duration: 0.3, ease: EASE }}
+    >
+      <div className="glass-card rounded-2xl p-6">
+        <h2 className="mb-5 flex items-center gap-2 font-semibold text-foreground">
+          <CreditCard className="h-4 w-4 text-violet-400" />
+          Payment details
+        </h2>
+        <PaymentElement options={{ layout: "tabs" }} />
+      </div>
+
+      <div className="mt-6 flex justify-between">
+        <Button variant="outline" className="border-white/10 hover:bg-white/5" onClick={onBack}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+        </Button>
+        <Button
+          className="gradient-brand btn-glow gap-2 border-0 text-white hover:opacity-90"
+          onClick={onContinue}
+        >
+          Review order <ArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </motion.div>
+  )
+}
+
+function RealReviewStep({
+  address, total, onBack,
+}: {
+  address: Address
+  total: number
+  onBack: () => void
+}) {
+  const stripe = useStripe()
+  const elements = useElements()
+  const router = useRouter()
+  const clearCart = useCartStore((s) => s.clearCart)
+  const [processing, setProcessing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function placeOrder() {
+    if (!stripe || !elements) return
+    setProcessing(true)
+    setError(null)
+
+    const { error: confirmError } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: `${window.location.origin}/checkout/success` },
+      redirect: "if_required",
+    })
+
+    if (confirmError) {
+      setError(confirmError.message ?? "Payment failed. Please check your details and try again.")
+      setProcessing(false)
+      return
+    }
+
+    clearCart()
+    router.push("/checkout/success")
+  }
+
+  return (
+    <motion.div
+      key="review"
+      initial={{ opacity: 0, x: 16 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -16 }}
+      transition={{ duration: 0.3, ease: EASE }}
+    >
+      <div className="space-y-4">
+        <div className="glass-card rounded-2xl p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <MapPin className="h-4 w-4 text-violet-400" /> Shipping to
+            </h3>
+            <button onClick={onBack} className="text-xs text-violet-400 hover:text-violet-300">
+              Edit
+            </button>
+          </div>
+          <p className="text-sm text-foreground">{address.name}</p>
+          <p className="text-xs text-muted-foreground">{address.line1}, {address.city} {address.postal}</p>
+          <p className="text-xs text-muted-foreground">{address.email}</p>
+        </div>
+
+        <div className="glass-card rounded-2xl p-5">
+          <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
+            <CreditCard className="h-4 w-4 text-violet-400" /> Payment
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Payment method securely captured by Stripe — no card details touch our servers.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { icon: Shield,  label: "Authenticated",   sub: "Every item verified"   },
+            { icon: Lock,    label: "SSL encrypted",    sub: "256-bit security"      },
+            { icon: Package, label: "Insured shipping", sub: "Full coverage"         },
+          ].map(({ icon: Icon, label, sub }) => (
+            <div key={label} className="glass-card rounded-xl p-3 text-center">
+              <Icon className="mx-auto h-4 w-4 text-violet-400" />
+              <p className="mt-1.5 text-xs font-medium text-foreground">{label}</p>
+              <p className="text-[10px] text-muted-foreground">{sub}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs text-red-400">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {error}
+        </div>
+      )}
+
+      <div className="mt-6 flex justify-between">
+        <Button variant="outline" className="border-white/10 hover:bg-white/5" onClick={onBack} disabled={processing}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+        </Button>
+        <Button
+          className="gradient-brand btn-glow gap-2 border-0 text-white hover:opacity-90"
+          size="lg"
+          onClick={placeOrder}
+          disabled={processing || !stripe || !elements}
+        >
+          {processing ? (
+            <>
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white"
+              />
+              Processing…
+            </>
+          ) : (
+            <>
+              <Lock className="h-4 w-4" />
+              Place order · {formatPrice(total)}
+            </>
+          )}
+        </Button>
+      </div>
+    </motion.div>
+  )
+}
+
+// ── Mock payment flow (used when no Stripe publishable key is configured) ──
+
+function MockPaymentAndReview({
+  step, setStep, address, total, onDone,
+}: {
+  step: Extract<Step, "payment" | "review">
+  setStep: (s: Step) => void
+  address: Address
+  total: number
+  onDone: () => Promise<void>
+}) {
+  const [card, setCard] = useState({
+    number: "4242 4242 4242 4242", expiry: "12/28", cvc: "123", name: "Emma Wilson",
+  })
+  const [processing, setProcessing] = useState(false)
 
   function cardField(id: keyof typeof card, label: string, placeholder: string) {
     return (
@@ -158,13 +390,225 @@ export default function CheckoutPage() {
 
   async function placeOrder() {
     setProcessing(true)
-    // Mock Stripe payment — replace with real Stripe Payment Element when keys added
+    await onDone()
+  }
+
+  if (step === "payment") {
+    return (
+      <motion.div
+        key="payment"
+        initial={{ opacity: 0, x: 16 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -16 }}
+        transition={{ duration: 0.3, ease: EASE }}
+      >
+        <div className="glass-card rounded-2xl p-6">
+          <h2 className="mb-5 flex items-center gap-2 font-semibold text-foreground">
+            <CreditCard className="h-4 w-4 text-violet-400" />
+            Payment details
+          </h2>
+
+          <div className="mb-5 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+            <div className="flex items-start gap-3">
+              <Lock className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
+              <div>
+                <p className="text-xs font-semibold text-foreground">
+                  Development mode — mock payment
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Real Stripe Payment Element loads when{" "}
+                  <code className="rounded bg-white/10 px-1 text-[10px]">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code>{" "}
+                  is set. For now, any card details proceed.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Card number</Label>
+              <div className="relative">
+                <Input
+                  value={card.number}
+                  onChange={(e) => setCard((c) => ({ ...c, number: e.target.value }))}
+                  className="border-white/10 bg-white/5 font-mono focus-visible:ring-violet-500/50 pr-12"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
+                  <div className="h-4 w-6 rounded bg-white/20" />
+                  <div className="h-4 w-6 rounded bg-white/10" />
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              {cardField("expiry", "Expiry", "MM/YY")}
+              {cardField("cvc",    "CVC",    "123")}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Card type</Label>
+                <div className="flex h-10 items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3">
+                  <div className="h-4 w-6 rounded bg-blue-500/50" />
+                  <span className="text-xs text-muted-foreground">Visa</span>
+                </div>
+              </div>
+            </div>
+            {cardField("name", "Name on card", "Emma Wilson")}
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-between">
+          <Button variant="outline" className="border-white/10 hover:bg-white/5" onClick={() => setStep("address")}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          </Button>
+          <Button
+            className="gradient-brand btn-glow gap-2 border-0 text-white hover:opacity-90"
+            onClick={() => setStep("review")}
+          >
+            Review order <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </motion.div>
+    )
+  }
+
+  return (
+    <motion.div
+      key="review"
+      initial={{ opacity: 0, x: 16 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -16 }}
+      transition={{ duration: 0.3, ease: EASE }}
+    >
+      <div className="space-y-4">
+        <div className="glass-card rounded-2xl p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <MapPin className="h-4 w-4 text-violet-400" /> Shipping to
+            </h3>
+            <button onClick={() => setStep("address")} className="text-xs text-violet-400 hover:text-violet-300">
+              Edit
+            </button>
+          </div>
+          <p className="text-sm text-foreground">{address.name}</p>
+          <p className="text-xs text-muted-foreground">{address.line1}, {address.city} {address.postal}</p>
+          <p className="text-xs text-muted-foreground">{address.email}</p>
+        </div>
+
+        <div className="glass-card rounded-2xl p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <CreditCard className="h-4 w-4 text-violet-400" /> Payment
+            </h3>
+            <button onClick={() => setStep("payment")} className="text-xs text-violet-400 hover:text-violet-300">
+              Edit
+            </button>
+          </div>
+          <p className="text-sm text-foreground">•••• •••• •••• {card.number.slice(-4)}</p>
+          <p className="text-xs text-muted-foreground">Expires {card.expiry}</p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { icon: Shield,  label: "Authenticated",   sub: "Every item verified"   },
+            { icon: Lock,    label: "SSL encrypted",    sub: "256-bit security"      },
+            { icon: Package, label: "Insured shipping", sub: "Full coverage"         },
+          ].map(({ icon: Icon, label, sub }) => (
+            <div key={label} className="glass-card rounded-xl p-3 text-center">
+              <Icon className="mx-auto h-4 w-4 text-violet-400" />
+              <p className="mt-1.5 text-xs font-medium text-foreground">{label}</p>
+              <p className="text-[10px] text-muted-foreground">{sub}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-6 flex justify-between">
+        <Button variant="outline" className="border-white/10 hover:bg-white/5" onClick={() => setStep("payment")}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+        </Button>
+        <Button
+          className="gradient-brand btn-glow gap-2 border-0 text-white hover:opacity-90"
+          size="lg"
+          onClick={placeOrder}
+          disabled={processing}
+        >
+          {processing ? (
+            <>
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white"
+              />
+              Processing…
+            </>
+          ) : (
+            <>
+              <Lock className="h-4 w-4" />
+              Place order · {formatPrice(total)}
+            </>
+          )}
+        </Button>
+      </div>
+    </motion.div>
+  )
+}
+
+export default function CheckoutPage() {
+  const router = useRouter()
+  const { items, clearCart, totalPrice } = useCartStore()
+  const [step, setStep] = useState<Step>("address")
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [loadingIntent, setLoadingIntent] = useState(false)
+  const [intentError, setIntentError] = useState<string | null>(null)
+  const [mockProcessing, setMockProcessing] = useState(false)
+
+  const [address, setAddress] = useState<Address>({
+    name: "Emma Wilson", email: "buyer1@aureon.io", phone: "+44 20 7946 0958",
+    line1: "14 Kensington Gardens", city: "London", state: "", postal: "W8 4PT", country: "GB",
+  })
+
+  const subtotal = totalPrice()
+  const fee = Math.round(subtotal * 0.1)
+  const total = subtotal + fee
+
+  async function goToPayment() {
+    if (!STRIPE_ENABLED) {
+      setStep("payment")
+      return
+    }
+    if (clientSecret) {
+      setStep("payment")
+      return
+    }
+
+    setLoadingIntent(true)
+    setIntentError(null)
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((i) => ({ productId: i.product.id, qty: i.qty })),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? "Could not start checkout.")
+      setClientSecret(data.clientSecret)
+      setStep("payment")
+    } catch (e) {
+      setIntentError(e instanceof Error ? e.message : "Could not start checkout.")
+      toast.error("Checkout failed to start", { description: "Please try again." })
+    } finally {
+      setLoadingIntent(false)
+    }
+  }
+
+  async function placeMockOrder() {
+    setMockProcessing(true)
     await new Promise((r) => setTimeout(r, 2200))
     clearCart()
     router.push("/checkout/success")
   }
 
-  if (items.length === 0 && !processing) {
+  if (items.length === 0 && !mockProcessing) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-midnight px-4 text-center">
         <Package className="mb-4 h-16 w-16 text-muted-foreground" />
@@ -200,214 +644,50 @@ export default function CheckoutPage() {
           <div>
             <AnimatePresence mode="wait">
               {step === "address" && (
-                <motion.div
-                  key="address"
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -16 }}
-                  transition={{ duration: 0.3, ease: EASE }}
-                >
-                  <div className="glass-card rounded-2xl p-6">
-                    <h2 className="mb-5 flex items-center gap-2 font-semibold text-foreground">
-                      <MapPin className="h-4 w-4 text-violet-400" />
-                      Shipping address
-                    </h2>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {addrField("name",   "Full name",  2)}
-                      {addrField("email",  "Email",      2)}
-                      {addrField("phone",  "Phone",      2)}
-                      {addrField("line1",  "Address",    2)}
-                      {addrField("city",   "City")}
-                      {addrField("postal", "Postal code")}
-                      {addrField("country","Country")}
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex justify-between">
-                    <div />
-                    <Button
-                      className="gradient-brand btn-glow gap-2 border-0 text-white hover:opacity-90"
-                      onClick={() => setStep("payment")}
-                    >
-                      Continue to payment <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </motion.div>
+                <AddressStep
+                  address={address}
+                  setAddress={setAddress}
+                  loading={loadingIntent}
+                  error={intentError}
+                  onContinue={goToPayment}
+                />
               )}
 
-              {step === "payment" && (
-                <motion.div
-                  key="payment"
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -16 }}
-                  transition={{ duration: 0.3, ease: EASE }}
+              {step !== "address" && STRIPE_ENABLED && clientSecret && (
+                <Elements
+                  key={clientSecret}
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret,
+                    appearance: {
+                      theme: "night",
+                      variables: {
+                        colorPrimary: "#7C3AED",
+                        colorBackground: "transparent",
+                        colorText: "#f4f4f5",
+                        colorDanger: "#f87171",
+                        borderRadius: "12px",
+                      },
+                    },
+                  }}
                 >
-                  <div className="glass-card rounded-2xl p-6">
-                    <h2 className="mb-5 flex items-center gap-2 font-semibold text-foreground">
-                      <CreditCard className="h-4 w-4 text-violet-400" />
-                      Payment details
-                    </h2>
-
-                    {/* Mock Stripe Payment Element notice */}
-                    <div className="mb-5 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
-                      <div className="flex items-start gap-3">
-                        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
-                        <div>
-                          <p className="text-xs font-semibold text-foreground">
-                            Development mode — mock payment
-                          </p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            Real Stripe Payment Element loads when{" "}
-                            <code className="rounded bg-white/10 px-1 text-[10px]">STRIPE_PUBLISHABLE_KEY</code>{" "}
-                            is set. For now, any card details proceed.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-muted-foreground">Card number</Label>
-                        <div className="relative">
-                          <Input
-                            value={card.number}
-                            onChange={(e) => setCard((c) => ({ ...c, number: e.target.value }))}
-                            className="border-white/10 bg-white/5 font-mono focus-visible:ring-violet-500/50 pr-12"
-                          />
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
-                            <div className="h-4 w-6 rounded bg-white/20" />
-                            <div className="h-4 w-6 rounded bg-white/10" />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-4">
-                        {cardField("expiry", "Expiry", "MM/YY")}
-                        {cardField("cvc",    "CVC",    "123")}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Card type</Label>
-                          <div className="flex h-10 items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3">
-                            <div className="h-4 w-6 rounded bg-blue-500/50" />
-                            <span className="text-xs text-muted-foreground">Visa</span>
-                          </div>
-                        </div>
-                      </div>
-                      {cardField("name", "Name on card", "Emma Wilson")}
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex justify-between">
-                    <Button
-                      variant="outline"
-                      className="border-white/10 hover:bg-white/5"
-                      onClick={() => setStep("address")}
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                    </Button>
-                    <Button
-                      className="gradient-brand btn-glow gap-2 border-0 text-white hover:opacity-90"
-                      onClick={() => setStep("review")}
-                    >
-                      Review order <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </motion.div>
+                  {step === "payment" && (
+                    <RealPaymentStep onBack={() => setStep("address")} onContinue={() => setStep("review")} />
+                  )}
+                  {step === "review" && (
+                    <RealReviewStep address={address} total={total} onBack={() => setStep("payment")} />
+                  )}
+                </Elements>
               )}
 
-              {step === "review" && (
-                <motion.div
-                  key="review"
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -16 }}
-                  transition={{ duration: 0.3, ease: EASE }}
-                >
-                  <div className="space-y-4">
-                    {/* Shipping summary */}
-                    <div className="glass-card rounded-2xl p-5">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                          <MapPin className="h-4 w-4 text-violet-400" /> Shipping to
-                        </h3>
-                        <button
-                          onClick={() => setStep("address")}
-                          className="text-xs text-violet-400 hover:text-violet-300"
-                        >
-                          Edit
-                        </button>
-                      </div>
-                      <p className="text-sm text-foreground">{address.name}</p>
-                      <p className="text-xs text-muted-foreground">{address.line1}, {address.city} {address.postal}</p>
-                      <p className="text-xs text-muted-foreground">{address.email}</p>
-                    </div>
-
-                    {/* Payment summary */}
-                    <div className="glass-card rounded-2xl p-5">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                          <CreditCard className="h-4 w-4 text-violet-400" /> Payment
-                        </h3>
-                        <button
-                          onClick={() => setStep("payment")}
-                          className="text-xs text-violet-400 hover:text-violet-300"
-                        >
-                          Edit
-                        </button>
-                      </div>
-                      <p className="text-sm text-foreground">
-                        •••• •••• •••• {card.number.slice(-4)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Expires {card.expiry}</p>
-                    </div>
-
-                    {/* Trust badges */}
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { icon: Shield,  label: "Authenticated",   sub: "Every item verified"   },
-                        { icon: Lock,    label: "SSL encrypted",    sub: "256-bit security"      },
-                        { icon: Package, label: "Insured shipping", sub: "Full coverage"         },
-                      ].map(({ icon: Icon, label, sub }) => (
-                        <div key={label} className="glass-card rounded-xl p-3 text-center">
-                          <Icon className="mx-auto h-4 w-4 text-violet-400" />
-                          <p className="mt-1.5 text-xs font-medium text-foreground">{label}</p>
-                          <p className="text-[10px] text-muted-foreground">{sub}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex justify-between">
-                    <Button
-                      variant="outline"
-                      className="border-white/10 hover:bg-white/5"
-                      onClick={() => setStep("payment")}
-                    >
-                      <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                    </Button>
-                    <Button
-                      className="gradient-brand btn-glow gap-2 border-0 text-white hover:opacity-90"
-                      size="lg"
-                      onClick={placeOrder}
-                      disabled={processing}
-                    >
-                      {processing ? (
-                        <>
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white"
-                          />
-                          Processing…
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="h-4 w-4" />
-                          Place order · {formatPrice(totalPrice() + Math.round(totalPrice() * 0.1))}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </motion.div>
+              {step !== "address" && !STRIPE_ENABLED && (
+                <MockPaymentAndReview
+                  step={step}
+                  setStep={setStep}
+                  address={address}
+                  total={total}
+                  onDone={placeMockOrder}
+                />
               )}
             </AnimatePresence>
           </div>
