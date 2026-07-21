@@ -109,9 +109,15 @@ The project ref is the subdomain in your project URL:
 `https://abcdefghijklmnop.supabase.co` → `abcdefghijklmnop`.
 
 ```bash
-supabase link --project-ref <project-ref>   # prompts for the database password
+supabase login            # once per machine
+supabase link --project-ref <project-ref>
 supabase db push
 ```
+
+`link` provisions a temporary login role from your access token, so the database
+password is **not** required — press Enter if prompted. Check what is pending
+before pushing with `supabase migration list`, which shows local and remote side
+by side.
 
 ### Option B — dashboard
 
@@ -142,12 +148,21 @@ finish; re-run it.
 
 ## 5. Run the seed
 
-**SQL Editor → New query**, paste all of `supabase/seed.sql`, run.
+```bash
+supabase db push --include-seed
+```
+
+Or paste `supabase/seed.sql` into **SQL Editor → New query** if you prefer.
 
 The seed writes directly into `auth.users` and sets
 `session_replication_role = replica` to bypass foreign keys while doing so. That is
-fine for the SQL editor and the local CLI, but it means the seed **cannot** be run
-through a normal client library.
+fine for the SQL editor and the CLI, but it means the seed **cannot** be run through
+a normal client library.
+
+It calls `extensions.crypt()` and `extensions.gen_salt()` fully qualified on
+purpose. `pgcrypto` is installed into the `extensions` schema, which is on the local
+stack's search path but not the hosted one — unqualified calls fail on the hosted
+project with `function gen_salt(unknown) does not exist`.
 
 ### Verify
 
@@ -208,22 +223,31 @@ redirected to `/`.
 
 ## 7. Auth URL configuration
 
-**Authentication → URL Configuration**:
+This is version-controlled rather than clicked in. `config.toml` has a
+`[remotes.production]` block holding the hosted project's Site URL, redirect
+allow-list and email settings. Apply it with:
 
-- **Site URL**: `http://localhost:3000` for now; change to the Vercel domain at
-  deploy time.
-- **Redirect URLs**:
-  ```
-  http://localhost:3000/auth/callback
-  http://localhost:3000/auth/confirm
-  ```
+```bash
+supabase config push
+```
 
-Add the production and preview URLs when you deploy (see the README's deployment
-section).
+It prints a diff of what will change before applying.
 
-While you are here, **Authentication → Providers → Email**: keep **Confirm email**
-enabled. It costs one extra click during testing and is the correct production
-behaviour.
+> **Why the separate block.** Everything outside `[remotes.production]` configures
+> the *local* stack, and that includes `enable_confirmations = false` — convenient
+> for testing, but on a hosted project it would let anyone sign up with an email
+> address they do not own. The override sets it back to `true`. If you ever add an
+> auth setting to the top-level `[auth]` section, consider whether it also needs an
+> entry in the remote block.
+
+After pushing, confirm the hosted project did not inherit the local value:
+
+```bash
+curl -s "https://<project-ref>.supabase.co/auth/v1/settings" -H "apikey: <anon-key>"
+# mailer_autoconfirm must be false — meaning email confirmation is required
+```
+
+Update `site_url` to the deployed origin once Vercel is live, then push again.
 
 ---
 
@@ -328,10 +352,10 @@ addresses routes through Apple's relay, which Edward will need to know about.
 
 ## 10. Email templates
 
-The local stack already uses our templates — they live in
-[`supabase/templates/`](../supabase/templates/) and are wired up by `config.toml`.
-**The hosted project does not read those files**, so the same two templates have to
-be pasted into the dashboard by hand.
+Our templates live in [`supabase/templates/`](../supabase/templates/). The local
+stack picks them up from `config.toml`, and `supabase config push` (step 7) uploads
+them to the hosted project — so there is normally nothing to do here. Paste them
+into **Authentication → Email Templates** by hand only if you are not using the CLI.
 
 > The Supabase defaults are not merely uglier, they are **broken for this app**. The
 > default link goes to GoTrue's `/auth/v1/verify`, which returns the session in a URL

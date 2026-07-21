@@ -18,80 +18,80 @@ INSERT INTO auth.users (
 ) VALUES
   -- Admin
   ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'admin@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'admin@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"Aureon Admin"}',
    FALSE, NOW(), NOW(), '', '', '', ''),
 
   -- Support agent
   ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'support@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'support@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"Aureon Support"}',
    FALSE, NOW(), NOW(), '', '', '', ''),
 
   -- Sellers
   ('00000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'watchvault@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'watchvault@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"Marcus Breitling"}',
    FALSE, NOW(), NOW(), '', '', '', ''),
 
   ('00000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'prestige@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'prestige@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"Sophie Aubert"}',
    FALSE, NOW(), NOW(), '', '', '', ''),
 
   ('00000000-0000-0000-0000-000000000013', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'arthouse@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'arthouse@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"Darius Chen"}',
    FALSE, NOW(), NOW(), '', '', '', ''),
 
   ('00000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'galerienoir@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'galerienoir@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"Isabelle Moreau"}',
    FALSE, NOW(), NOW(), '', '', '', ''),
 
   ('00000000-0000-0000-0000-000000000015', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'maisonresell@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'maisonresell@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"Alexis Fontaine"}',
    FALSE, NOW(), NOW(), '', '', '', ''),
 
   ('00000000-0000-0000-0000-000000000016', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'archiveluxury@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'archiveluxury@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"Ren Nakamura"}',
    FALSE, NOW(), NOW(), '', '', '', ''),
 
   ('00000000-0000-0000-0000-000000000017', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'rarefinds@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'rarefinds@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"James Okafor"}',
    FALSE, NOW(), NOW(), '', '', '', ''),
 
   ('00000000-0000-0000-0000-000000000018', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'numismatic@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'numismatic@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"Helena Vasquez"}',
    FALSE, NOW(), NOW(), '', '', '', ''),
 
   ('00000000-0000-0000-0000-000000000019', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'lumiere@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'lumiere@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"Céline Dupont"}',
    FALSE, NOW(), NOW(), '', '', '', ''),
 
   ('00000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'tokyodrops@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'tokyodrops@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"Kenji Watanabe"}',
    FALSE, NOW(), NOW(), '', '', '', ''),
 
   -- Buyers
   ('00000000-0000-0000-0000-000000000031', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'buyer1@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'buyer1@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"Emma Wilson"}',
    FALSE, NOW(), NOW(), '', '', '', ''),
 
   ('00000000-0000-0000-0000-000000000032', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'buyer2@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'buyer2@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"Luca Ferretti"}',
    FALSE, NOW(), NOW(), '', '', '', ''),
 
   ('00000000-0000-0000-0000-000000000033', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-   'buyer3@aureon.io', crypt('test1234!', gen_salt('bf')), NOW(),
+   'buyer3@aureon.io', extensions.crypt('test1234!', extensions.gen_salt('bf')), NOW(),
    '{"provider":"email","providers":["email"]}', '{"full_name":"Priya Sharma"}',
    FALSE, NOW(), NOW(), '', '', '', '')
 ON CONFLICT (id) DO NOTHING;
