@@ -1,0 +1,103 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Aureon — Supabase CLI configuration
+# Docs: https://supabase.com/docs/guides/local-development/cli/config
+#
+# Local stack:   supabase start
+# Reset + seed:  supabase db reset
+# Push to cloud: supabase link --project-ref <ref> && supabase db push
+# ─────────────────────────────────────────────────────────────────────────────
+
+project_id = "aureon"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+# Match whatever the hosted project runs — new Supabase projects are on 17.
+# A mismatch here makes `db diff` and `db push` report phantom differences.
+major_version = 17
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1:54321"
+
+# Catches every outbound email locally — open http://127.0.0.1:54324 to click
+# verification / password-reset links without a real inbox.
+# (Named [inbucket] on CLI versions before 2.34.)
+[local_smtp]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+# 3001 is included because `next dev` falls back to it whenever something else
+# already holds 3000 — without these entries OAuth and email links break with a
+# redirect-not-allowed error that gives no hint as to why.
+additional_redirect_urls = [
+  "http://localhost:3000/auth/callback",
+  "http://localhost:3000/auth/confirm",
+  "http://localhost:3001/auth/callback",
+  "http://localhost:3001/auth/confirm",
+]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+# Local only: skip the confirmation click so seeded/test accounts log in instantly.
+# The hosted project keeps confirmations ON (set in the dashboard).
+enable_confirmations = false
+secure_password_change = true
+
+# Both templates are overridden so the links resolve through our own
+# /auth/confirm route. See the comment inside recovery.html for why the default
+# .ConfirmationURL link cannot work with a server-side handler.
+# Mirror these in Dashboard → Authentication → Email Templates for the hosted
+# project — config.toml only governs the local stack.
+[auth.email.template.confirmation]
+subject = "Confirm your Aureon account"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your Aureon password"
+content_path = "./supabase/templates/recovery.html"
+
+# ── OAuth providers ──────────────────────────────────────────────────────────
+# Values are read from the shell env so no secrets land in git.
+# For the hosted project these are configured in Dashboard → Authentication →
+# Providers instead; this block only affects `supabase start`.
+
+[auth.external.google]
+enabled = false
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
+
+[auth.external.apple]
+enabled = false
+client_id = "env(APPLE_CLIENT_ID)"
+secret = "env(APPLE_CLIENT_SECRET)"
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
+
+[analytics]
+enabled = false

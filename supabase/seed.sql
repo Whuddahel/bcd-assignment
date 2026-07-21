@@ -97,32 +97,21 @@ INSERT INTO auth.users (
 ON CONFLICT (id) DO NOTHING;
 
 -- Auth identities (required for email/password login to work locally)
+--
+-- `provider_id` is NOT NULL in current GoTrue schemas; for the email provider
+-- it is the user's UUID as text, which is also what `identity_data.sub` holds.
+-- Derived from auth.users rather than a hand-listed set of IDs so the two can
+-- never drift apart.
 INSERT INTO auth.identities (
-  id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at
+  id, user_id, provider_id, identity_data, provider,
+  last_sign_in_at, created_at, updated_at
 )
 SELECT
-  id, id,
+  gen_random_uuid(), id, id::text,
   jsonb_build_object('sub', id::text, 'email', email),
   'email',
   NOW(), NOW(), NOW()
 FROM auth.users
-WHERE id IN (
-  '00000000-0000-0000-0000-000000000001',
-  '00000000-0000-0000-0000-000000000002',
-  '00000000-0000-0000-0000-000000000011',
-  '00000000-0000-0000-0000-000000000012',
-  '00000000-0000-0000-0000-000000000013',
-  '00000000-0000-0000-0000-000000000014',
-  '00000000-0000-0000-0000-000000000015',
-  '00000000-0000-0000-0000-000000000016',
-  '00000000-0000-0000-0000-000000000017',
-  '00000000-0000-0000-0000-000000000018',
-  '00000000-0000-0000-0000-000000000019',
-  '00000000-0000-0000-0000-000000000020',
-  '00000000-0000-0000-0000-000000000031',
-  '00000000-0000-0000-0000-000000000032',
-  '00000000-0000-0000-0000-000000000033'
-)
 ON CONFLICT (provider, provider_id) DO NOTHING;
 
 -- Re-enable FK enforcement
@@ -309,7 +298,7 @@ INSERT INTO public.products (
 ('c0000000-0000-0000-0000-000000000011',
  'a0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000002',
  'KAWS "SHARE" Original Painting', 'kaws-share-original-painting',
- 'Acrylic on canvas, 48" × 48". Signed and dated verso 2021. COA from the artist's studio. Exhibited at KAWS TOKYO FIRST.',
+ 'Acrylic on canvas, 48" × 48". Signed and dated verso 2021. COA from the artist''s studio. Exhibited at KAWS TOKYO FIRST.',
  'mint', 'active', 28500000, NULL,
  '{"artist":"KAWS","year":2021,"medium":"Acrylic on canvas","dimensions":"48x48 inches","signed":true,"exhibited":true}',
  TRUE, TRUE, 12400, 521),

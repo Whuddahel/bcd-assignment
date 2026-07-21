@@ -1,31 +1,41 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Mail, ArrowLeft, ArrowRight, CheckCircle } from "lucide-react"
+import { Mail, ArrowLeft, ArrowRight, CheckCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GradientText } from "@/components/brand/gradient-text"
+import { requestPasswordReset } from "@/lib/auth/actions"
+import { useMockAuth } from "@/lib/config"
 import { toast } from "sonner"
 
 const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number]
 
 export default function ForgotPasswordPage() {
-  const [email,   setEmail]   = useState("")
-  const [sent,    setSent]    = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState("")
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!email) return
-    setLoading(true)
-    // Mock: Resend email — swap for real Supabase resetPasswordForEmail when configured
-    await new Promise((r) => setTimeout(r, 1200))
-    setLoading(false)
-    setSent(true)
-    toast.success("Reset email sent")
+    setError(null)
+
+    startTransition(async () => {
+      const result = await requestPasswordReset({ email })
+
+      if (result.ok) {
+        setSent(true)
+        toast.success("Reset email sent")
+        return
+      }
+
+      setError(result.error)
+      toast.error("Could not send reset email", { description: result.error })
+    })
   }
 
   return (
@@ -46,13 +56,30 @@ export default function ForgotPasswordPage() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {useMockAuth && (
+              <p className="mb-5 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-200">
+                Running without Supabase — password reset is disabled until your
+                project keys are in <code className="font-mono">.env.local</code>.
+              </p>
+            )}
+
+            {error && (
+              <p
+                role="alert"
+                className="mb-5 rounded-xl border border-red-500/25 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-300"
+              >
+                {error}
+              </p>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div className="space-y-1.5">
                 <Label htmlFor="email" className="text-xs text-muted-foreground">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     placeholder="you@example.com"
                     value={email}
@@ -66,10 +93,14 @@ export default function ForgotPasswordPage() {
 
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={pending}
                 className="gradient-brand btn-glow h-11 w-full gap-2 border-0 text-white hover:opacity-90"
               >
-                {loading ? "Sending…" : <>Send reset link <ArrowRight className="h-4 w-4" /></>}
+                {pending ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>
+                ) : (
+                  <>Send reset link <ArrowRight className="h-4 w-4" /></>
+                )}
               </Button>
             </form>
           </>
@@ -84,9 +115,9 @@ export default function ForgotPasswordPage() {
               <CheckCircle className="h-8 w-8 text-emerald-400" />
             </div>
             <h2 className="font-display text-xl font-bold text-foreground">Check your inbox</h2>
-            <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-              We sent a password reset link to <strong className="text-foreground">{email}</strong>.
-              It expires in 1 hour.
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              If <strong className="text-foreground">{email}</strong> has an Aureon
+              account, a password reset link is on its way. It expires in 1 hour.
             </p>
             <p className="mt-4 text-xs text-muted-foreground">
               Didn&apos;t receive it?{" "}

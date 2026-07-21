@@ -1,0 +1,14 @@
+<h2>Confirm your Aureon account</h2>
+
+<p>Welcome to Aureon. Confirm your email address to activate your account and
+start collecting.</p>
+
+<p>
+  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/account">
+    Confirm my account
+  </a>
+</p>
+
+<p>If you did not create an Aureon account, you can ignore this email.</p>
+
+<!-- See recovery.html for why this uses .TokenHash rather than .ConfirmationURL. -->

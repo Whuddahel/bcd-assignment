@@ -1,5 +1,6 @@
 "use client"
 
+import { useTransition } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
@@ -7,6 +8,7 @@ import {
   LayoutDashboard, Package, Heart, User, ChevronRight, LogOut, Star,
 } from "lucide-react"
 import { Header } from "@/components/layout/header"
+import { signOut } from "@/lib/auth/actions"
 import { cn } from "@/lib/utils"
 
 const NAV = [
@@ -19,6 +21,7 @@ const NAV = [
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const [signingOut, startSignOut] = useTransition()
 
   return (
     <>
@@ -48,9 +51,13 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                 </Link>
               ))}
             </nav>
-            <button className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition-all hover:bg-white/5 hover:text-foreground">
+            <button
+              onClick={() => startSignOut(async () => { await signOut() })}
+              disabled={signingOut}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition-all hover:bg-white/5 hover:text-foreground disabled:opacity-60"
+            >
               <LogOut className="h-4 w-4" />
-              Sign out
+              {signingOut ? "Signing out…" : "Sign out"}
             </button>
           </div>
         </aside>

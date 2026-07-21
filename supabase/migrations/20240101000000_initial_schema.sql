@@ -583,3 +583,27 @@ CREATE POLICY "newsletter_select_admin"
 CREATE POLICY "newsletter_insert_anon"
   ON public.newsletter_subscribers FOR INSERT
   WITH CHECK (TRUE);
+
+-- ── Grants ────────────────────────────────────────────────────────────────────
+--
+-- RLS and GRANTs are two independent gates and BOTH must pass. The policies
+-- above decide which *rows* a caller may see; these grants decide whether the
+-- API roles may touch the table at all. Without them PostgREST answers every
+-- request with `42501 permission denied`, no matter how permissive the policy.
+--
+-- Granting broadly here is safe and is the Supabase default: every table in
+-- this schema has RLS enabled above, so row access is still policy-controlled.
+
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+
+GRANT ALL ON ALL TABLES    IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated, service_role;
+
+-- Same treatment for anything added by a later migration.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  GRANT ALL ON FUNCTIONS TO anon, authenticated, service_role;

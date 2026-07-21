@@ -5,37 +5,45 @@ import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware"
 type RouteGuard = {
   pattern: RegExp
   roles: string[]
-  redirect: string
 }
 
 const ROUTE_GUARDS: RouteGuard[] = [
-  {
-    pattern: /^\/account/,
-    roles: ["customer", "seller", "admin", "support"],
-    redirect: "/sign-in",
-  },
-  { pattern: /^\/seller/, roles: ["seller", "admin"], redirect: "/sign-in" },
-  { pattern: /^\/admin/, roles: ["admin"], redirect: "/" },
-  { pattern: /^\/support/, roles: ["support", "admin"], redirect: "/" },
+  { pattern: /^\/account/, roles: ["customer", "seller", "admin", "support"] },
+  { pattern: /^\/seller/, roles: ["seller", "admin"] },
+  { pattern: /^\/admin/, roles: ["admin"] },
+  { pattern: /^\/support/, roles: ["support", "admin"] },
+]
+
+/** Where to send a signed-in user who lacks the role for the route. */
+const ROLE_HOME: Record<string, string> = {
+  customer: "/account",
+  seller: "/seller",
+  admin: "/admin",
+  support: "/support",
+}
+
+/** Never guarded — these are how a signed-out user gets a session. */
+const PUBLIC_AUTH_PATHS = [
+  "/sign-in",
+  "/sign-up",
+  "/forgot-password",
+  "/reset-password",
+  "/auth/callback",
+  "/auth/confirm",
 ]
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  const isDevMode =
-    process.env.DEVELOPMENT_MODE === "true" || process.env.DEVELOPMENT_MODE === "1"
   const hasSupabase = Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   )
 
-  // Dev mode without Supabase: let all requests through
-  if (isDevMode && !hasSupabase) {
-    return NextResponse.next()
-  }
+  // No Supabase configured: auth is mocked, so every route is open. This is
+  // what lets the rest of the team run the app with no credentials.
+  if (!hasSupabase) return NextResponse.next()
 
   const response = NextResponse.next({ request })
-
-  if (!hasSupabase) return response
 
   const supabase = createSupabaseMiddlewareClient(request, response)
   if (!supabase) return response
@@ -45,12 +53,16 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  if (PUBLIC_AUTH_PATHS.some((p) => pathname.startsWith(p))) return response
+
   const guard = ROUTE_GUARDS.find((g) => g.pattern.test(pathname))
   if (!guard) return response
 
+  // Not signed in — send to sign-in and come back here afterwards.
   if (!user) {
     const loginUrl = request.nextUrl.clone()
-    loginUrl.pathname = guard.redirect
+    loginUrl.pathname = "/sign-in"
+    loginUrl.search = ""
     loginUrl.searchParams.set("next", pathname)
     return NextResponse.redirect(loginUrl)
   }
@@ -62,8 +74,11 @@ export async function middleware(request: NextRequest) {
     .eq("id", user.id)
     .single()
 
+  // Signed in but wrong role — bounce to their own home rather than sign-in,
+  // which would be nonsense for someone who already has a session.
   if (!profile || !guard.roles.includes(profile.role)) {
-    return NextResponse.redirect(new URL(guard.redirect, request.url))
+    const home = profile ? (ROLE_HOME[profile.role] ?? "/") : "/"
+    return NextResponse.redirect(new URL(home, request.url))
   }
 
   return response
