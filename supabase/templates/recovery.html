@@ -1,0 +1,26 @@
+<h2>Reset your Aureon password</h2>
+
+<p>We received a request to reset the password for this account.</p>
+
+<p>
+  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password">
+    Choose a new password
+  </a>
+</p>
+
+<p>This link expires in one hour and can only be used once.</p>
+
+<p>If you did not request this, you can safely ignore this email — your password
+will stay as it is.</p>
+
+<!--
+  Uses .TokenHash (not .ConfirmationURL) on purpose.
+
+  .ConfirmationURL sends the user to GoTrue's /auth/v1/verify endpoint, which
+  hands the session back in a URL *fragment*. Fragments are never sent to the
+  server, so our route handler cannot see the token — and it drops the user on
+  the site root with no way to set a password.
+
+  .TokenHash lets /auth/confirm verify server-side and forward to
+  /reset-password inside a valid session, which is what the page expects.
+-->

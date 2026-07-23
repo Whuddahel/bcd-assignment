@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useTransition } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -21,6 +21,7 @@ import {
   Store,
   ShieldCheck,
   HeadphonesIcon,
+  Loader2,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { AureonLogo } from "@/components/brand/aureon-logo"
@@ -32,6 +33,10 @@ import { useNotificationsStore } from "@/stores/notifications-store"
 import { CartSidebar } from "@/components/shop/cart-sidebar"
 import { SearchModal } from "@/components/layout/search-modal"
 import { NotificationsDropdown } from "@/components/layout/notifications-dropdown"
+import { useUser } from "@/hooks/use-user"
+import { signOut } from "@/lib/auth/actions"
+import { initialsOf } from "@/lib/auth/types"
+import type { UserRole } from "@/types/database"
 
 const navLinks = [
   {
@@ -52,15 +57,28 @@ const navLinks = [
   { label: "How it Works", href: "/#how-it-works" },
 ]
 
-const accountMenuItems = [
-  { label: "My Account",    href: "/account",            icon: User },
-  { label: "Orders",        href: "/account/orders",     icon: Package },
-  { label: "Wishlist",      href: "/account/wishlist",   icon: Heart },
-  { label: "Collection",    href: "/account/collection", icon: Star },
-  { label: "Seller Hub",    href: "/seller",             icon: Store },
-  { label: "Admin",         href: "/admin",              icon: ShieldCheck },
-  { label: "Support Inbox", href: "/support",            icon: HeadphonesIcon },
+/** `roles: null` means every signed-in user sees the item. */
+const accountMenuItems: {
+  label: string
+  href: string
+  icon: React.ElementType
+  roles: UserRole[] | null
+}[] = [
+  { label: "My Account",    href: "/account",            icon: User,           roles: null },
+  { label: "Orders",        href: "/account/orders",     icon: Package,        roles: null },
+  { label: "Wishlist",      href: "/account/wishlist",   icon: Heart,          roles: null },
+  { label: "Collection",    href: "/account/collection", icon: Star,           roles: null },
+  { label: "Seller Hub",    href: "/seller",             icon: Store,          roles: ["seller", "admin"] },
+  { label: "Admin",         href: "/admin",              icon: ShieldCheck,    roles: ["admin"] },
+  { label: "Support Inbox", href: "/support",            icon: HeadphonesIcon, roles: ["support", "admin"] },
 ]
+
+const ROLE_LABEL: Record<UserRole, string> = {
+  customer: "Customer",
+  seller: "Seller",
+  admin: "Admin",
+  support: "Support",
+}
 
 export function Header() {
   const [scrolled,        setScrolled]        = useState(false)
@@ -79,6 +97,13 @@ export function Header() {
 
   const notifRef   = useRef<HTMLDivElement>(null)
   const accountRef = useRef<HTMLDivElement>(null)
+
+  const { user, isLoading: userLoading } = useUser()
+  const [signingOut, startSignOut] = useTransition()
+
+  const visibleMenuItems = accountMenuItems.filter(
+    (item) => !item.roles || (user && item.roles.includes(user.role)),
+  )
 
   useEffect(() => {
     setMounted(true)
@@ -247,71 +272,86 @@ export function Header() {
               <NotificationsDropdown />
             </div>
 
-            {/* Account dropdown */}
-            <div className="relative hidden sm:block" ref={accountRef}>
-              <button
-                onClick={() => setAccountOpen((o) => !o)}
-                className="ml-1 flex h-8 w-8 items-center justify-center rounded-full gradient-brand text-sm font-bold text-white shadow-md transition-all hover:shadow-lg hover:opacity-90"
-                aria-label="Account menu"
-              >
-                E
-              </button>
+            {/* Account dropdown (signed in) / auth buttons (signed out) */}
+            {userLoading ? (
+              <div className="ml-1 hidden h-8 w-8 animate-pulse rounded-full bg-white/10 sm:block" />
+            ) : user ? (
+              <div className="relative hidden sm:block" ref={accountRef}>
+                <button
+                  onClick={() => setAccountOpen((o) => !o)}
+                  className="ml-1 flex h-8 w-8 items-center justify-center rounded-full gradient-brand text-xs font-bold text-white shadow-md transition-all hover:opacity-90 hover:shadow-lg"
+                  aria-label="Account menu"
+                  aria-expanded={accountOpen}
+                >
+                  {initialsOf(user)}
+                </button>
 
-              <AnimatePresence>
-                {accountOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setAccountOpen(false)} />
-                    <motion.div
-                      initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -8, scale: 0.97 }}
-                      transition={{ duration: 0.15 }}
-                      className="glass-card absolute right-0 top-full z-50 mt-2 min-w-[220px] overflow-hidden rounded-2xl shadow-card"
-                    >
-                      {/* User info */}
-                      <div className="border-b border-white/5 px-4 py-3">
-                        <p className="text-sm font-semibold text-foreground">Emma Wilson</p>
-                        <p className="text-xs text-muted-foreground">buyer1@aureon.io</p>
-                        <Badge className="mt-1.5 bg-violet-500/20 text-violet-300 text-[10px] border-violet-500/30">
-                          Customer · Verified
-                        </Badge>
-                      </div>
+                <AnimatePresence>
+                  {accountOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setAccountOpen(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                        transition={{ duration: 0.15 }}
+                        className="glass-card absolute right-0 top-full z-50 mt-2 min-w-[220px] overflow-hidden rounded-2xl shadow-card"
+                      >
+                        {/* User info */}
+                        <div className="border-b border-white/5 px-4 py-3">
+                          <p className="text-sm font-semibold text-foreground">
+                            {user.fullName ?? "Collector"}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                          <Badge className="mt-1.5 border-violet-500/30 bg-violet-500/20 text-[10px] text-violet-300">
+                            {ROLE_LABEL[user.role]}
+                            {user.isMock && " · Mock"}
+                          </Badge>
+                        </div>
 
-                      {/* Links */}
-                      <div className="p-1.5">
-                        {accountMenuItems.map(({ label, href, icon: Icon }) => (
-                          <Link
-                            key={href}
-                            href={href}
-                            onClick={() => setAccountOpen(false)}
-                            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                        {/* Links */}
+                        <div className="p-1.5">
+                          {visibleMenuItems.map(({ label, href, icon: Icon }) => (
+                            <Link
+                              key={href}
+                              href={href}
+                              onClick={() => setAccountOpen(false)}
+                              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                            >
+                              <Icon className="h-3.5 w-3.5" />
+                              {label}
+                            </Link>
+                          ))}
+                        </div>
+
+                        {/* Sign out */}
+                        <div className="border-t border-white/5 p-1.5">
+                          <button
+                            onClick={() => startSignOut(async () => { await signOut() })}
+                            disabled={signingOut}
+                            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-60"
                           >
-                            <Icon className="h-3.5 w-3.5" />
-                            {label}
-                          </Link>
-                        ))}
-                      </div>
-
-                      {/* Sign out */}
-                      <div className="border-t border-white/5 p-1.5">
-                        <button
-                          onClick={() => setAccountOpen(false)}
-                          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400"
-                        >
-                          <LogOut className="h-3.5 w-3.5" />
-                          Sign out
-                        </button>
-                      </div>
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Auth buttons (logged-out state — hidden when account shown) */}
-            <div className="ml-1 hidden items-center gap-2 lg:flex xl:hidden">
-              {/* intentionally hidden on xl — account avatar shown instead */}
-            </div>
+                            {signingOut
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <LogOut className="h-3.5 w-3.5" />}
+                            {signingOut ? "Signing out…" : "Sign out"}
+                          </button>
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <div className="ml-1.5 hidden items-center gap-2 sm:flex">
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/sign-in">Sign in</Link>
+                </Button>
+                <Button size="sm" className="gradient-brand border-0 text-white" asChild>
+                  <Link href="/sign-up">Get started</Link>
+                </Button>
+              </div>
+            )}
 
             {/* Mobile menu toggle */}
             <Button
@@ -349,27 +389,43 @@ export function Header() {
                   </Link>
                 ))}
 
-                <div className="mt-2 border-t border-white/5 pt-4 space-y-1">
-                  {accountMenuItems.slice(0, 5).map(({ label, href, icon: Icon }) => (
-                    <Link
-                      key={href}
-                      href={href}
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                      {label}
-                    </Link>
-                  ))}
-                </div>
+                {user && (
+                  <div className="mt-2 space-y-1 border-t border-white/5 pt-4">
+                    {visibleMenuItems.map(({ label, href, icon: Icon }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
 
                 <div className="mt-2 flex flex-col gap-2 border-t border-white/5 pt-4">
-                  <Button variant="outline" asChild>
-                    <Link href="/sign-in" onClick={() => setMobileOpen(false)}>Sign in</Link>
-                  </Button>
-                  <Button className="gradient-brand border-0 text-white" asChild>
-                    <Link href="/sign-up" onClick={() => setMobileOpen(false)}>Get started</Link>
-                  </Button>
+                  {user ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => startSignOut(async () => { await signOut() })}
+                      disabled={signingOut}
+                      className="gap-2"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                      {signingOut ? "Signing out…" : "Sign out"}
+                    </Button>
+                  ) : (
+                    <>
+                      <Button variant="outline" asChild>
+                        <Link href="/sign-in" onClick={() => setMobileOpen(false)}>Sign in</Link>
+                      </Button>
+                      <Button className="gradient-brand border-0 text-white" asChild>
+                        <Link href="/sign-up" onClick={() => setMobileOpen(false)}>Get started</Link>
+                      </Button>
+                    </>
+                  )}
                 </div>
               </nav>
             </motion.div>
