@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Camera, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,16 +9,50 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { GradientText } from "@/components/brand/gradient-text"
 import { toast } from "sonner"
+import { useUser } from "@/hooks/use-user"
+import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
 export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
+  const { user } = useUser() // <-- Get the logged-in user
+
+  // 1. Start with empty/fallback fields
   const [form, setForm] = useState({
-    name:    "Emma Wilson",
-    email:   "buyer1@aureon.io",
-    bio:     "Passionate collector of vintage watches and contemporary art.",
-    phone:   "+44 20 7946 0958",
-    address: "14 Kensington Gardens, London, W8 4PT",
+    name:    "",
+    email:   "",
+    bio:     "",
+    phone:   "",
+    address: "",
   })
+
+  // 2. Fetch the actual profile data when the component loads
+  useEffect(() => {
+    if (!user) return; // Wait until the user is loaded
+
+    async function loadProfile() {
+      const supabase = createSupabaseBrowserClient()
+      
+      // Fetch the extra details from the "profiles" database table
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("bio, phone")
+        .eq("id", user!.id)
+        .single()
+
+      // Update the form with the user's real data!
+      setForm({
+        name: user?.fullName || "",
+        email: user?.email || "",
+        bio: profile?.bio || "",
+        phone: profile?.phone || "",
+        address: "", // (Address isn't in the DB yet, so we leave it blank for now)
+      })
+    }
+
+    loadProfile()
+  }, [user])
+
+
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -29,6 +63,7 @@ export default function ProfilePage() {
   }
 
   function field(id: keyof typeof form, label: string, type = "text") {
+    const isEmail = id === "email";
     return (
       <div className="space-y-1.5">
         <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
@@ -37,7 +72,9 @@ export default function ProfilePage() {
           type={type}
           value={form[id]}
           onChange={e => setForm(f => ({ ...f, [id]: e.target.value }))}
-          className="border-white/10 bg-white/5 focus-visible:ring-violet-500/50"
+          disabled={isEmail}
+          className={`border-white/10 bg-white/5 focus-visible:ring-violet-500/50 ${
+            isEmail ? "opacity-60 cursor-not-allowed" : ""}`}
         />
       </div>
     )

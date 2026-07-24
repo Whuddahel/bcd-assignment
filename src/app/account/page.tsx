@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { GradientText } from "@/components/brand/gradient-text"
 import { MOCK_ORDERS } from "@/lib/mock"
 import { formatPrice } from "@/lib/utils"
+import { getSessionUser } from "@/lib/auth/session"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = { title: "My Account" }
@@ -17,14 +18,16 @@ const statusStyle: Record<string, string> = {
   cancelled: "bg-red-500/10 text-red-400 border-red-500/20",
 }
 
-export default function AccountPage() {
+export default async function AccountPage() {
+  const user = await getSessionUser()
+  const displayName = user?.fullName || user?.email || "Emma"
   return (
     <div>
       {/* Header */}
       <div className="mb-8">
         <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">Dashboard</p>
         <h1 className="mt-1 font-display text-3xl font-bold">
-          Welcome back, <GradientText>Emma</GradientText>
+          Welcome back, <GradientText>{displayName}</GradientText>
         </h1>
       </div>
 
