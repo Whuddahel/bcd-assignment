@@ -69,7 +69,9 @@ async function resolveFromSupabase(
       productId,
       sellerId: product.seller_id,
       title: product.title,
-      price: product.price,
+      // products.price is stored in cents in Supabase; everywhere else in the
+      // app (mock data, formatPrice, cart totals) works in whole dollars.
+      price: product.price / 100,
       qty,
     })
   }

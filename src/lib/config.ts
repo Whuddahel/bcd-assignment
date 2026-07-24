@@ -13,9 +13,15 @@ export const hasResend = Boolean(env.RESEND_API_KEY)
 /**
  * True when the app is running against mocks for at least one service.
  * Drives the dev banner and the role switcher.
+ *
+ * Only the NEXT_PUBLIC_ mirror is used here — the server-only DEVELOPMENT_MODE
+ * is undefined in the browser and defaults to `true`, which would otherwise
+ * force this to `true` on the client and cause a hydration mismatch against the
+ * server. Keep NEXT_PUBLIC_DEVELOPMENT_MODE in sync with DEVELOPMENT_MODE in
+ * .env.local.
  */
 export const isDevelopmentMode =
-  env.NEXT_PUBLIC_DEVELOPMENT_MODE || env.DEVELOPMENT_MODE || !hasSupabase
+  env.NEXT_PUBLIC_DEVELOPMENT_MODE || !hasSupabase
 
 /**
  * Auth specifically falls back to a fake session only when Supabase is not

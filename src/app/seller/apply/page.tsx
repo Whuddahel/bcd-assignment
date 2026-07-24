@@ -248,7 +248,7 @@ export default function SellerApplyPage() {
           <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
             <p className="text-xs text-muted-foreground">
               Once approved, you&apos;ll receive a{" "}
-              <strong className="text-foreground">Stripe Connect Express</strong> onboarding link
+              <strong className="text-foreground">Stripe Connect</strong> onboarding link
               to set up payouts. Aureon charges a{" "}
               <strong className="text-foreground">10% platform fee</strong> on each successful
               sale. Payouts within 7 business days of delivery confirmation.

@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
 import {
-  LayoutDashboard, Package, ShoppingBag, BarChart2, ChevronRight, LogOut, Plus, Store,
+  LayoutDashboard, Package, ShoppingBag, BarChart2, ChevronRight, LogOut, Plus, Store, Wallet,
 } from "lucide-react"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,7 @@ const NAV = [
   { href: "/seller/products",  label: "Listings",   icon: Package         },
   { href: "/seller/orders",    label: "Orders",     icon: ShoppingBag     },
   { href: "/seller/analytics", label: "Analytics",  icon: BarChart2       },
+  { href: "/seller/payouts",   label: "Payouts",    icon: Wallet          },
   { href: "/seller/apply",     label: "Apply",      icon: Store           },
 ]
 

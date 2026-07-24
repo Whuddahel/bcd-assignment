@@ -47,13 +47,15 @@ async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
 
   if (existingOrder) return
 
+  // orders.total_amount and order_items.price are stored in cents; the
+  // metadata above (like the rest of the app) works in whole dollars.
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .insert({
       buyer_id: buyerId,
       status: "confirmed",
-      total_amount: subtotal + platformFee,
-      platform_fee: platformFee,
+      total_amount: Math.round((subtotal + platformFee) * 100),
+      platform_fee: Math.round(platformFee * 100),
       stripe_payment_intent_id: paymentIntent.id,
       stripe_payment_status: paymentIntent.status,
     })
@@ -71,7 +73,7 @@ async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
       product_id: item.productId,
       seller_id: item.sellerId,
       title: item.title,
-      price: item.price,
+      price: Math.round(item.price * 100),
       quantity: item.qty,
     })),
   )

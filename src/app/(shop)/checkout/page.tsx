@@ -256,7 +256,7 @@ function RealReviewStep({
     setProcessing(true)
     setError(null)
 
-    const { error: confirmError } = await stripe.confirmPayment({
+    const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: { return_url: `${window.location.origin}/checkout/success` },
       redirect: "if_required",
@@ -269,7 +269,7 @@ function RealReviewStep({
     }
 
     clearCart()
-    router.push("/checkout/success")
+    router.push(`/checkout/success?payment_intent=${paymentIntent.id}`)
   }
 
   return (
