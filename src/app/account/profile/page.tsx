@@ -22,6 +22,7 @@ export default function ProfilePage() {
     email:   "",
     bio:     "",
     phone:   "",
+    avatarUrl: "",
     //address: "",
   })
 
@@ -35,7 +36,7 @@ export default function ProfilePage() {
       // Fetch the extra details from the "profiles" database table
       const { data: profile } = await supabase
         .from("profiles")
-        .select("bio, phone")
+        .select("bio, phone, avatar_url")
         .eq("id", user!.id)
         .single()
 
@@ -45,6 +46,7 @@ export default function ProfilePage() {
         email: user?.email || "",
         bio: profile?.bio || "",
         phone: profile?.phone || "",
+        avatarUrl: profile?.avatar_url || "",
         //address: "", // (is not used at the moment)
       })
     }
@@ -68,6 +70,7 @@ export default function ProfilePage() {
         full_name: form.name, // The database column is 'full_name', but our state is 'name'
         bio: form.bio,
         phone: form.phone,
+        avatar_url: form.avatarUrl, // Save the avatar URL!
       })
       .eq("id", user.id)
 
@@ -78,9 +81,11 @@ export default function ProfilePage() {
       toast.error("Failed to save changes: " + error.message)
     } else {
       toast.success("Profile updated")
+      window.location.reload() // Force a refresh so the new avatar propagates to the dashboard
     }
   }
 
+  // fields
   function field(id: keyof typeof form, label: string, type = "text") {
     const isEmail = id === "email";
     return (
@@ -108,6 +113,36 @@ export default function ProfilePage() {
     )
   }
 
+  // Upload image function
+  async function uploadAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+    toast.loading("Uploading image...")
+    const supabase = createSupabaseBrowserClient()
+    
+    // Create a unique file name using the user's ID
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${user.id}-${Math.random()}.${fileExt}`
+    // 1. Upload to Supabase Storage bucket named "avatars"
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, file)
+    if (uploadError) {
+      toast.dismiss()
+      toast.error("Upload failed: " + uploadError.message)
+      return
+    }
+    // 2. Get the public URL for the uploaded image
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(fileName)
+    // 3. Update our form state to immediately show the image
+    setForm(f => ({ ...f, avatarUrl: publicUrl }))
+    
+    toast.dismiss()
+    toast.success("Image uploaded! Remember to save changes.")
+  }
+
   return (
     <div>
       <div className="mb-8">
@@ -121,20 +156,30 @@ export default function ProfilePage() {
           <h2 className="mb-4 text-sm font-semibold text-foreground">Profile Photo</h2>
           <div className="flex items-center gap-5">
             <div className="relative">
-              <div className="flex h-20 w-20 items-center justify-center rounded-2xl gradient-brand text-3xl font-bold text-white shadow-lg">
-                E
+              <div className="flex h-20 w-20 overflow-hidden items-center justify-center rounded-2xl gradient-brand text-3xl font-bold text-white shadow-lg">
+                {/* Display the image if they have one, otherwise show initials */}
+                {form.avatarUrl ? (
+                  <img src={form.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                ) : (
+                  form.name?.[0]?.toUpperCase() || "?"
+                )}
               </div>
-              <button
-                type="button"
-                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-midnight-100 text-muted-foreground transition-colors hover:text-foreground"
-              >
+              
+              {/* Hidden file input wrapped inside a label button */}
+              <label className="absolute -bottom-1 -right-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-midnight-100 text-muted-foreground transition-colors hover:text-foreground">
                 <Camera className="h-3.5 w-3.5" />
-              </button>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={uploadAvatar} 
+                />
+              </label>
             </div>
             <div>
               <p className="font-medium text-foreground">{form.name}</p>
               <p className="text-sm text-muted-foreground">{form.email}</p>
-              <p className="mt-1 text-xs text-violet-400">Customer · Verified</p>
+              <p className="mt-1 text-xs text-violet-400 capitalize">{user?.role || "Customer"} · Verified</p>
             </div>
           </div>
         </div>
