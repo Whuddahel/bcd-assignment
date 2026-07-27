@@ -22,7 +22,7 @@ export default function ProfilePage() {
     email:   "",
     bio:     "",
     phone:   "",
-    address: "",
+    //address: "",
   })
 
   // 2. Fetch the actual profile data when the component loads
@@ -45,7 +45,7 @@ export default function ProfilePage() {
         email: user?.email || "",
         bio: profile?.bio || "",
         phone: profile?.phone || "",
-        address: "", // (Address isn't in the DB yet, so we leave it blank for now)
+        //address: "", // (is not used at the moment)
       })
     }
 
@@ -53,13 +53,32 @@ export default function ProfilePage() {
   }, [user])
 
 
-
+  // When they press save
   async function handleSave(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault() // Prevent browser from refresh the page
+
+    if (!user) return // Stop if userless 
     setSaving(true)
-    await new Promise(r => setTimeout(r, 800))
+    
+    const supabase = createSupabaseBrowserClient() // Setup supabase
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        full_name: form.name, // The database column is 'full_name', but our state is 'name'
+        bio: form.bio,
+        phone: form.phone,
+      })
+      .eq("id", user.id)
+
     setSaving(false)
-    toast.success("Profile updated")
+
+    // Handle the result
+    if (error) {
+      toast.error("Failed to save changes: " + error.message)
+    } else {
+      toast.success("Profile updated")
+    }
   }
 
   function field(id: keyof typeof form, label: string, type = "text") {
@@ -71,7 +90,16 @@ export default function ProfilePage() {
           id={id}
           type={type}
           value={form[id]}
-          onChange={e => setForm(f => ({ ...f, [id]: e.target.value }))}
+          //onChange={e => setForm(f => ({ ...f, [id]: e.target.value }))}
+          onChange={e => {
+            let value = e.target.value
+            
+            // if phone field, use regex to strip invalid characters
+            if (id === "phone") {
+              value = value.replace(/[^\d\s\+\-\(\)]/g, "")
+            }
+            setForm(f => ({ ...f, [id]: value }))
+          }}
           disabled={isEmail}
           className={`border-white/10 bg-white/5 focus-visible:ring-violet-500/50 ${
             isEmail ? "opacity-60 cursor-not-allowed" : ""}`}
@@ -131,7 +159,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Shipping address */}
+        {/* Shipping address
         <div className="glass-card rounded-2xl p-6">
           <h2 className="mb-5 text-sm font-semibold text-foreground">Default Shipping Address</h2>
           <div className="space-y-1.5">
@@ -143,7 +171,7 @@ export default function ProfilePage() {
               className="border-white/10 bg-white/5 focus-visible:ring-violet-500/50"
             />
           </div>
-        </div>
+        </div> */}
 
         {/* Danger zone */}
         <div className="glass-card rounded-2xl p-6">
