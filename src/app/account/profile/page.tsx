@@ -16,7 +16,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const { user } = useUser() // <-- Get the logged-in user
 
-  // 1. Start with empty/fallback fields
+  // Start with empty/fallback fields
   const [form, setForm] = useState({
     name:    "",
     email:   "",
@@ -26,7 +26,7 @@ export default function ProfilePage() {
     //address: "",
   })
 
-  // 2. Fetch the actual profile data when the component loads
+  // Fetch the actual profile data when the component loads
   useEffect(() => {
     if (!user) return; // Wait until the user is loaded
 
