@@ -62,7 +62,7 @@ async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
       stripe_payment_intent_id: paymentIntent.id,
       stripe_payment_status: paymentIntent.status,
     })
-    .select("id")
+    .select("id, total_amount")
     .single()
 
   if (orderError || !order) {

@@ -5,9 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { GradientText } from "@/components/brand/gradient-text"
 import { RevenueBarChart } from "@/components/dashboard/revenue-bar-chart"
 import { toLast6Months } from "@/lib/dashboard"
-import { SellerDashboardMock } from "./seller-dashboard-mock"
-import { useLiveData } from "@/lib/config"
-import { getSessionUser } from "@/lib/auth/session"
+import { requireUser } from "@/lib/auth/session"
 import { createSupabaseServerAdminClient } from "@/lib/supabase/server"
 import { formatPrice } from "@/lib/utils"
 
@@ -19,15 +17,12 @@ const statusStyle: Record<string, string> = {
   refunded:  "bg-red-500/10 text-red-400",
 }
 
-async function getSellerDashboard() {
-  const user = await getSessionUser()
-  if (!user) return null
-
+async function getSellerDashboard(userId: string) {
   const admin = await createSupabaseServerAdminClient()
   const { data: seller } = await admin
     .from("seller_profiles")
     .select("id, business_name, rating, review_count")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .maybeSingle()
 
   if (!seller) return null
@@ -92,9 +87,8 @@ async function getSellerDashboard() {
 }
 
 export default async function SellerDashboard() {
-  if (!useLiveData) return <SellerDashboardMock />
-
-  const data = await getSellerDashboard()
+  const user = await requireUser(["seller", "admin"])
+  const data = await getSellerDashboard(user.id)
   if (!data) {
     return (
       <div>

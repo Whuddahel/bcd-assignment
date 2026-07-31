@@ -19,12 +19,12 @@ export async function getTicketsForUser(userId: string): Promise<TicketVM[]> {
   return data.map((t) => mapTicket(t as never))
 }
 
-/** All tickets, for the support/admin inbox. */
+/** All tickets, for the support/admin inbox (includes messages for previews). */
 export async function getAllTickets(): Promise<TicketVM[]> {
   const supabase = await createSupabaseServerClient()
   const { data, error } = await supabase
     .from("support_tickets")
-    .select(TICKET_LIST_SELECT)
+    .select(TICKET_FULL_SELECT)
     .order("updated_at", { ascending: false })
 
   if (error || !data) {

@@ -106,6 +106,22 @@ export async function getRelatedProducts(
   return products.filter((p) => p.id !== excludeId).slice(0, limit)
 }
 
+/** A seller's own products across ALL statuses (for the seller product manager). */
+export async function getSellerProducts(sellerId: string): Promise<ProductVM[]> {
+  const supabase = await createSupabaseServerClient()
+  const { data, error } = await supabase
+    .from("products")
+    .select(PRODUCT_SELECT)
+    .eq("seller_id", sellerId)
+    .order("created_at", { ascending: false })
+
+  if (error || !data) {
+    if (error) console.error("getSellerProducts error:", error.message)
+    return []
+  }
+  return (data as unknown as ProductRow[]).map(mapProduct)
+}
+
 /** Best-effort view-count bump. Never throws; failure is non-fatal for a page. */
 export async function incrementProductView(id: string): Promise<void> {
   try {

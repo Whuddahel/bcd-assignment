@@ -2,9 +2,7 @@ import { Package, DollarSign, Clock, CheckCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { GradientText } from "@/components/brand/gradient-text"
 import { RefundButton } from "@/components/orders/refund-button"
-import { SellerOrdersMock } from "./seller-orders-mock"
-import { useLiveData } from "@/lib/config"
-import { getSessionUser } from "@/lib/auth/session"
+import { requireUser } from "@/lib/auth/session"
 import { createSupabaseServerAdminClient } from "@/lib/supabase/server"
 import { formatPrice } from "@/lib/utils"
 
@@ -26,15 +24,12 @@ type SellerOrderRow = {
   lineTotal: number // cents
 }
 
-async function getSellerOrders(): Promise<SellerOrderRow[] | null> {
-  const user = await getSessionUser()
-  if (!user) return null
-
+async function getSellerOrders(userId: string): Promise<SellerOrderRow[] | null> {
   const admin = await createSupabaseServerAdminClient()
   const { data: seller } = await admin
     .from("seller_profiles")
     .select("id")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .maybeSingle()
 
   if (!seller) return null
@@ -64,11 +59,8 @@ async function getSellerOrders(): Promise<SellerOrderRow[] | null> {
 }
 
 export default async function SellerOrdersPage() {
-  if (!useLiveData) {
-    return <SellerOrdersMock />
-  }
-
-  const rows = await getSellerOrders()
+  const user = await requireUser(["seller", "admin"])
+  const rows = await getSellerOrders(user.id)
 
   if (!rows) {
     return (

@@ -3,8 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { GradientText } from "@/components/brand/gradient-text"
 import { RevenueBarChart } from "@/components/dashboard/revenue-bar-chart"
 import { toLast6Months } from "@/lib/dashboard"
-import { AdminDashboardMock } from "./admin-dashboard-mock"
-import { useLiveData } from "@/lib/config"
+import { requireUser } from "@/lib/auth/session"
 import { createSupabaseServerAdminClient } from "@/lib/supabase/server"
 import { formatPrice } from "@/lib/utils"
 
@@ -50,8 +49,7 @@ async function getAdminDashboard() {
 }
 
 export default async function AdminDashboard() {
-  if (!useLiveData) return <AdminDashboardMock />
-
+  await requireUser(["admin"])
   const s = await getAdminDashboard()
 
   const statCards = [

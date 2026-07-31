@@ -23,7 +23,7 @@ export async function sendEmail({ to, subject, react, replyTo }: SendEmailParams
       from: `Aureon <${env.RESEND_FROM_EMAIL}>`,
       to,
       subject,
-      reply_to: replyTo,
+      replyTo,
       react,
     })
 

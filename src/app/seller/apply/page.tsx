@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { GradientText } from "@/components/brand/gradient-text"
 import { HeroBlobBackground } from "@/components/brand/gradient-blob"
+import { applyAsSeller } from "@/lib/actions/seller"
 import { toast } from "sonner"
 
 const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number]
@@ -35,8 +36,29 @@ export default function SellerApplyPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    await new Promise((r) => setTimeout(r, 1500))
+
+    const instagram = form.instagram.trim()
+    const instagramUrl = instagram
+      ? instagram.startsWith("http")
+        ? instagram
+        : `https://instagram.com/${instagram.replace(/^@/, "")}`
+      : ""
+
+    const res = await applyAsSeller({
+      businessName: form.businessName,
+      description: form.bio,
+      websiteUrl: form.website.trim(),
+      instagramUrl,
+    })
     setSaving(false)
+
+    if (!res.ok) {
+      toast.error(res.error, {
+        description: res.fieldErrors ? Object.values(res.fieldErrors)[0] : undefined,
+      })
+      return
+    }
+
     setSubmitted(true)
     toast.success("Application submitted!", {
       description: "Our team reviews applications within 48 hours.",
