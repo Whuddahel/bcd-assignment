@@ -2,13 +2,23 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, X, ArrowRight, Clock, TrendingUp } from "lucide-react"
+import { Search, X, ArrowRight, Clock, TrendingUp, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { MOCK_PRODUCTS, MOCK_CATEGORIES } from "@/lib/mock"
 import { formatPrice, cn } from "@/lib/utils"
 
 const TRENDING = ["Patek Philippe", "KAWS", "Hermès Birkin", "Richard Mille", "Banksy"]
 const RECENT = ["Rolex Daytona", "Jordan Fleer 1986"]
+
+type SearchProduct = {
+  id: string
+  slug: string
+  title: string
+  sellerName: string
+  gradient: string
+  price: number
+}
+type SearchCategory = { name: string; slug: string }
+type BrowseCategory = { name: string; slug: string; count: number }
 
 interface SearchModalProps {
   isOpen: boolean
@@ -17,21 +27,47 @@ interface SearchModalProps {
 
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [query, setQuery] = useState("")
+  const [results, setResults] = useState<SearchProduct[]>([])
+  const [catResults, setCatResults] = useState<SearchCategory[]>([])
+  const [categories, setCategories] = useState<BrowseCategory[]>([])
+  const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const results = query.trim().length > 0
-    ? MOCK_PRODUCTS.filter((p) =>
-        p.title.toLowerCase().includes(query.toLowerCase()) ||
-        p.sellerName.toLowerCase().includes(query.toLowerCase()) ||
-        p.categoryName.toLowerCase().includes(query.toLowerCase()),
-      ).slice(0, 6)
-    : []
+  // Load the category grid once the modal opens.
+  useEffect(() => {
+    if (!isOpen || categories.length > 0) return
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.categories ?? []))
+      .catch(() => {})
+  }, [isOpen, categories.length])
 
-  const catResults = query.trim().length > 0
-    ? MOCK_CATEGORIES.filter((c) =>
-        c.name.toLowerCase().includes(query.toLowerCase()),
-      ).slice(0, 2)
-    : []
+  // Debounced product/category search.
+  useEffect(() => {
+    const q = query.trim()
+    if (q.length === 0) {
+      setResults([])
+      setCatResults([])
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    const ctrl = new AbortController()
+    const t = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
+        .then((r) => r.json())
+        .then((d) => {
+          setResults(d.products ?? [])
+          setCatResults(d.categories ?? [])
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false))
+    }, 220)
+    return () => {
+      clearTimeout(t)
+      ctrl.abort()
+    }
+  }, [query])
 
   useEffect(() => {
     if (isOpen) {
@@ -148,7 +184,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                         Browse by category
                       </div>
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {MOCK_CATEGORIES.map((c) => (
+                        {categories.map((c) => (
                           <Link
                             key={c.slug}
                             href={`/browse?category=${c.slug}`}
@@ -165,7 +201,11 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 ) : (
                   /* Search results */
                   <div className="space-y-1">
-                    {results.length === 0 && catResults.length === 0 ? (
+                    {loading ? (
+                      <div className="flex items-center justify-center py-10 text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
+                      </div>
+                    ) : results.length === 0 && catResults.length === 0 ? (
                       <div className="py-10 text-center">
                         <p className="text-sm text-muted-foreground">
                           No results for &ldquo;<span className="text-foreground">{query}</span>&rdquo;

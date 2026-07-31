@@ -9,13 +9,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { GradientText } from "@/components/brand/gradient-text"
 import { formatPrice } from "@/lib/utils"
-import { MOCK_PRODUCTS } from "@/lib/mock"
+import type { ProductVM } from "@/lib/data/types"
 import { useCartStore } from "@/stores/cart-store"
 import { toast } from "sonner"
 import { useRef } from "react"
-
-// Use the real isTrending products so hrefs always match real slugs
-const drops = MOCK_PRODUCTS.filter((p) => p.isTrending && p.status === "active").slice(0, 4)
 
 const conditionLabel: Record<string, string> = {
   mint:      "Mint",
@@ -63,7 +60,7 @@ function TiltCard({ children, className }: { children: React.ReactNode; classNam
   )
 }
 
-function DropCard({ drop, index }: { drop: typeof drops[0]; index: number }) {
+function DropCard({ drop, index }: { drop: ProductVM; index: number }) {
   const [wishlisted, setWishlisted] = useState(false)
   const [imgError,   setImgError]   = useState(false)
   const addItem = useCartStore((s) => s.addItem)
@@ -164,7 +161,7 @@ function DropCard({ drop, index }: { drop: typeof drops[0]; index: number }) {
   )
 }
 
-export function TrendingDrops() {
+export function TrendingDrops({ drops }: { drops: ProductVM[] }) {
   return (
     <section className="relative bg-midnight-50/30 py-24 sm:py-32">
       {/* Subtle grid bg */}

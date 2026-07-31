@@ -2,17 +2,17 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import type { MockProduct } from "@/lib/mock"
+import type { ProductVM } from "@/lib/data/types"
 
 export type CartItem = {
-  product: MockProduct
+  product: ProductVM
   qty: number
 }
 
 interface CartStore {
   items: CartItem[]
   isOpen: boolean
-  addItem: (product: MockProduct) => void
+  addItem: (product: ProductVM) => void
   removeItem: (productId: string) => void
   updateQty: (productId: string, qty: number) => void
   clearCart: () => void

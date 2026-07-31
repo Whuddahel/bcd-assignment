@@ -7,17 +7,17 @@ import { motion, useMotionValue, useSpring, useTransform } from "framer-motion"
 import { Heart, Shield, CheckCircle, ShoppingCart, Eye } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn, formatPrice } from "@/lib/utils"
-import type { MockProduct } from "@/lib/mock"
+import type { ProductVM } from "@/lib/data/types"
 import { useCartStore } from "@/stores/cart-store"
 import { toast } from "sonner"
 
 interface ProductCardProps {
-  product: MockProduct
+  product: ProductVM
   index?: number
   wishlistDefault?: boolean
 }
 
-const conditionLabel: Record<MockProduct["condition"], string> = {
+const conditionLabel: Record<ProductVM["condition"], string> = {
   mint:       "Mint",
   excellent:  "Excellent",
   very_good:  "Very Good",
@@ -25,7 +25,7 @@ const conditionLabel: Record<MockProduct["condition"], string> = {
   fair:       "Fair",
 }
 
-const conditionColor: Record<MockProduct["condition"], string> = {
+const conditionColor: Record<ProductVM["condition"], string> = {
   mint:       "text-emerald-400",
   excellent:  "text-green-400",
   very_good:  "text-lime-400",

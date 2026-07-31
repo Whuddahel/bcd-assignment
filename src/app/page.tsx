@@ -9,6 +9,7 @@ import { CategoryShowcase } from "@/components/marketing/category-showcase"
 import { HowItWorks } from "@/components/marketing/how-it-works"
 import { Testimonials } from "@/components/marketing/testimonials"
 import { NewsletterCTA } from "@/components/marketing/newsletter-cta"
+import { getTrendingProducts } from "@/lib/data/products"
 
 export const metadata: Metadata = {
   title: "Aureon — Own the Rare",
@@ -16,7 +17,9 @@ export const metadata: Metadata = {
     "Curated luxury watches, art, and rare collectibles — with provenance you can trust. The marketplace for discerning collectors.",
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const trending = await getTrendingProducts(4)
+
   return (
     <>
       <Header />
@@ -24,7 +27,7 @@ export default function HomePage() {
         <HeroSection />
         <BrandsMarquee />
         <FeaturedCollections />
-        <TrendingDrops />
+        <TrendingDrops drops={trending} />
         <CategoryShowcase />
         <HowItWorks />
         <Testimonials />
