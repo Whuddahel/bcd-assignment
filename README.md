@@ -14,11 +14,14 @@ Built with **Next.js 16** (App Router, React 19), **Supabase** (Postgres + Auth 
 
 - [Quick start](#quick-start)
 - [Environment variables](#environment-variables)
-- [Development mode vs. real services](#development-mode-vs-real-services)
+- [Live data & service configuration](#live-data--service-configuration)
 - [Database](#database)
 - [Authentication](#authentication)
 - [Project structure](#project-structure)
 - [Deployment](#deployment)
+
+> **Full system documentation** (setup guide + feature reference + dashboard checklists):
+> see [`DOCUMENTATION.md`](DOCUMENTATION.md).
 
 ---
 
@@ -32,11 +35,12 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open <http://localhost:3000>. With no credentials in `.env.local` the app runs
-entirely on mock data — every page renders, and a role switcher in the bottom-right
-corner lets you view the app as a customer, seller, admin, or support agent.
+Open <http://localhost:3000>. The app reads live data from Supabase, so a configured
+`.env.local` (at minimum the Supabase keys) is required — see
+[Environment variables](#environment-variables) and
+[`DOCUMENTATION.md`](DOCUMENTATION.md) §3.
 
-To run against a real Supabase project, follow
+To provision a real Supabase project, follow
 [docs/supabase-setup.md](docs/supabase-setup.md).
 
 ### Scripts
@@ -61,8 +65,8 @@ in [`src/lib/env.ts`](src/lib/env.ts) and fails loudly rather than misbehaving l
 | Variable | Required for | Notes |
 | --- | --- | --- |
 | `NEXT_PUBLIC_APP_URL` | Always | Public origin. Drives OAuth and email redirect links. |
-| `DEVELOPMENT_MODE` | Always | Server-side mock switch. |
-| `NEXT_PUBLIC_DEVELOPMENT_MODE` | Always | Client-visible mirror — **keep identical** to the above. |
+| `DEVELOPMENT_MODE` | Optional | Toggles dev banners only; set `false` in production. |
+| `NEXT_PUBLIC_DEVELOPMENT_MODE` | Optional | Client-visible mirror — **keep identical** to the above. |
 | `NEXT_PUBLIC_SUPABASE_URL` | Auth, data | Project Settings → API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Auth, data | Project Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Webhooks, admin writes | **Server only.** Never expose to the browser. |
@@ -79,30 +83,26 @@ place; the app never reads them.
 
 ---
 
-## Development mode vs. real services
+## Live data & service configuration
 
-The app is designed so each external service can be switched on independently — no
-one is blocked waiting on someone else's integration.
+The app is **live‑data only**: every page reads from Supabase through the server‑only
+data layer in [`src/lib/data/`](src/lib/data/). The former static mock catalog and the
+dev role‑switcher have been removed. See [`DOCUMENTATION.md`](DOCUMENTATION.md) for the
+full architecture and feature reference.
 
-`DEVELOPMENT_MODE=true` keeps Stripe mocked and emails console-logged, and shows the
-dev banner plus role switcher.
+Each external service degrades gracefully when its keys are absent, so integrations can
+be brought up one at a time:
 
-**Auth is the exception.** It switches to real Supabase the moment
-`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are present,
-regardless of `DEVELOPMENT_MODE`. This is deliberate: auth can go live while Stripe
-and email are still mocked.
+| Service | Keys absent | Keys present |
+| --- | --- | --- |
+| Supabase | App can't fetch data (required) | Real data, auth, and RLS |
+| Stripe | `/api/checkout` returns `503` | Real Payment Element + webhooks + Connect |
+| Resend | Emails are logged and skipped | Real transactional email |
 
-| Supabase keys | Behaviour |
-| --- | --- |
-| Absent | Mock customer session, role follows the dev switcher, **every route is open** |
-| Present | Real sign-in/sign-up/OAuth, real sessions, middleware enforces role guards |
-
-The flags live in [`src/lib/config.ts`](src/lib/config.ts) as `isDevelopmentMode`,
-`useMockAuth`, `hasSupabase`, `hasStripe`, and `hasResend`.
-
-> The open-routes behaviour is a **development convenience only**. It is safe
-> because it cannot trigger in production: a deployment without Supabase keys has no
-> data to protect. Never deploy with the keys missing.
+`DEVELOPMENT_MODE` now only toggles developer banners and should be `false` in
+production. The capability flags live in [`src/lib/config.ts`](src/lib/config.ts):
+`hasSupabase`, `hasStripe`, `hasResend`, `useLiveData` (`= hasSupabase`), and
+`useMockAuth` (a defensive fallback that is inert whenever Supabase is configured).
 
 ---
 
@@ -218,14 +218,19 @@ src/
 │   ├── brand/           logo, gradients, page transitions
 │   ├── marketing/       landing page sections
 │   ├── shop/            product card, cart sidebar
-│   └── dev/             dev-mode banner and role switcher
+│   ├── dashboard/       revenue chart
+│   └── orders/          refund button, connect payouts button
 ├── lib/
 │   ├── auth/            actions, session, schemas, OAuth, shared types
 │   ├── supabase/        browser, server, and middleware clients
-│   ├── mock/            mock data mirroring the seed
+│   ├── data/            server-only Supabase queries + view-model mappers
+│   ├── actions/         server actions (wishlist, products, reviews, tickets, seller)
+│   ├── stripe/          Stripe server client + Connect helpers
+│   ├── email/           Resend client
 │   ├── config.ts        feature flags derived from env
 │   └── env.ts           validated environment (zod)
-├── stores/              zustand — cart, notifications, dev role
+├── emails/              React Email transactional templates
+├── stores/              zustand — cart, notifications
 ├── hooks/               useUser
 └── types/database.ts    hand-maintained Supabase types
 ```
