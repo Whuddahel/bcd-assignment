@@ -2,7 +2,14 @@ import { Resend } from "resend"
 import { env } from "@/lib/env"
 import * as React from "react"
 
-const resend = new Resend(env.RESEND_API_KEY)
+// Lazily constructed so that importing this module never throws when
+// RESEND_API_KEY is unset (e.g. during `next build` before email is configured).
+let resendClient: Resend | null = null
+function getResend(): Resend | null {
+  if (!env.RESEND_API_KEY) return null
+  if (!resendClient) resendClient = new Resend(env.RESEND_API_KEY)
+  return resendClient
+}
 
 interface SendEmailParams {
   to: string | string[]
@@ -17,6 +24,9 @@ export async function sendEmail({ to, subject, react, replyTo }: SendEmailParams
     console.warn(`Subject: ${subject} | To: ${to}`)
     return { error: "Missing RESEND_API_KEY" }
   }
+
+  const resend = getResend()
+  if (!resend) return { error: "Missing RESEND_API_KEY" }
 
   try {
     const { data, error } = await resend.emails.send({

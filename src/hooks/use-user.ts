@@ -5,7 +5,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { MOCK_SESSION_USER, type SessionUser } from "@/lib/auth/types"
 import { useMockAuth } from "@/lib/config"
-import { useDevStore } from "@/stores/dev-store"
 
 async function fetchSessionUser(): Promise<SessionUser | null> {
   const res = await fetch("/api/auth/me", { cache: "no-store" })
@@ -23,7 +22,6 @@ async function fetchSessionUser(): Promise<SessionUser | null> {
  */
 export function useUser() {
   const queryClient = useQueryClient()
-  const mockRole = useDevStore((s) => s.mockRole)
 
   const query = useQuery({
     queryKey: ["session-user"],
@@ -47,8 +45,9 @@ export function useUser() {
   }, [queryClient])
 
   if (useMockAuth) {
+    // Only reached when Supabase is unconfigured (never in production).
     return {
-      user: { ...MOCK_SESSION_USER, role: mockRole } satisfies SessionUser,
+      user: { ...MOCK_SESSION_USER } satisfies SessionUser,
       isLoading: false,
       isMock: true,
     }

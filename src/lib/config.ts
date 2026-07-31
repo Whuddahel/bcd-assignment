@@ -31,11 +31,11 @@ export const isDevelopmentMode =
  */
 export const useMockAuth = !hasSupabase
 
-// True when server-side code should read/write real Supabase rows instead of
-// the static mock catalog. Kept as a single source of truth so price
-// resolution (checkout) and persistence (webhook) never disagree about which
-// product ids are valid.
-export const useLiveData = hasSupabase && !isDevelopmentMode
+// True when server-side code should read/write real Supabase rows. The app is
+// live-data-only now (the static mock catalog has been removed); this stays as
+// a single defensive guard so payment/webhook/payout routes fail gracefully if
+// Supabase is ever unconfigured rather than throwing deep in a handler.
+export const useLiveData = hasSupabase
 
 export const appConfig = {
   name: "Aureon",
