@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { GradientText } from "@/components/brand/gradient-text"
 import type { ProductVM } from "@/lib/data/types"
+import { adminSetProductStatus } from "@/lib/actions/admin"
 import { formatPrice } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -31,8 +32,27 @@ const statusStyle: Record<string, string> = {
 export function AdminProductsClient({ products }: { products: ProductVM[] }) {
   const [tab,   setTab]   = useState<TabKey>("all")
   const [query, setQuery] = useState("")
+  const [items, setItems] = useState<ProductVM[]>(products)
+  const [busy,  setBusy]  = useState<string | null>(null)
 
-  const filtered = products.filter((p) => {
+  async function moderate(p: ProductVM, action: "approve" | "reject") {
+    setBusy(p.id)
+    const status = action === "approve" ? "active" : "archived"
+    const res = await adminSetProductStatus(p.id, status)
+    setBusy(null)
+    if (!res.ok) {
+      toast.error(res.error)
+      return
+    }
+    setItems((cur) =>
+      cur.map((it) => (it.id === p.id ? { ...it, status: action === "approve" ? "active" : "draft" } : it)),
+    )
+    toast[action === "approve" ? "success" : "error"](
+      `${action === "approve" ? "Approved" : "Rejected"}: ${p.title}`,
+    )
+  }
+
+  const filtered = items.filter((p) => {
     const matchesTab   = tab === "all" || p.status === tab
     const matchesQuery =
       query === "" ||
@@ -42,13 +62,13 @@ export function AdminProductsClient({ products }: { products: ProductVM[] }) {
   })
 
   const counts: Record<TabKey, number> = {
-    all:     products.length,
-    active:  products.filter((p) => p.status === "active").length,
+    all:     items.length,
+    active:  items.filter((p) => p.status === "active").length,
     // pending_review products are surfaced as "draft" by the view-model, so the
     // Pending Review tab has no distinct source and stays at 0.
     pending: 0,
-    draft:   products.filter((p) => p.status === "draft").length,
-    sold:    products.filter((p) => p.status === "sold").length,
+    draft:   items.filter((p) => p.status === "draft").length,
+    sold:    items.filter((p) => p.status === "sold").length,
   }
 
   return (
@@ -59,7 +79,7 @@ export function AdminProductsClient({ products }: { products: ProductVM[] }) {
           Product <GradientText>Moderation</GradientText>
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {products.length} total listings
+          {items.length} total listings
         </p>
       </div>
 
@@ -185,7 +205,8 @@ export function AdminProductsClient({ products }: { products: ProductVM[] }) {
                     variant="ghost"
                     className="h-8 w-8 text-emerald-400 hover:bg-emerald-500/10"
                     aria-label="Approve"
-                    onClick={() => toast.success(`Approved: ${p.title}`)}
+                    disabled={busy === p.id || p.status === "active"}
+                    onClick={() => moderate(p, "approve")}
                   >
                     <CheckCircle className="h-3.5 w-3.5" />
                   </Button>
@@ -194,7 +215,8 @@ export function AdminProductsClient({ products }: { products: ProductVM[] }) {
                     variant="ghost"
                     className="h-8 w-8 text-red-400 hover:bg-red-500/10"
                     aria-label="Reject"
-                    onClick={() => toast.error(`Rejected: ${p.title}`)}
+                    disabled={busy === p.id}
+                    onClick={() => moderate(p, "reject")}
                   >
                     <XCircle className="h-3.5 w-3.5" />
                   </Button>
@@ -208,7 +230,7 @@ export function AdminProductsClient({ products }: { products: ProductVM[] }) {
         {filtered.length > 0 && (
           <div className="border-t border-white/5 px-5 py-3">
             <p className="text-xs text-muted-foreground">
-              Showing {filtered.length} of {products.length} listings
+              Showing {filtered.length} of {items.length} listings
             </p>
           </div>
         )}

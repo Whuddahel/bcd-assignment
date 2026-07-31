@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { GradientText } from "@/components/brand/gradient-text"
+import { submitContactMessage } from "@/lib/actions/contact"
 import { toast } from "sonner"
 
 const SUBJECTS = [
@@ -66,8 +67,17 @@ export default function ContactPage() {
       return
     }
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 1200))
+    const res = await submitContactMessage({
+      name: form.name,
+      email: form.email,
+      subject: form.subject,
+      message: form.message,
+    })
     setLoading(false)
+    if (!res.ok) {
+      toast.error(res.error)
+      return
+    }
     setSent(true)
   }
 

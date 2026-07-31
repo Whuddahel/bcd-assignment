@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { GradientBlob } from "@/components/brand/gradient-blob"
 import { GradientText } from "@/components/brand/gradient-text"
 import { NoiseOverlay } from "@/components/brand/noise-overlay"
+import { subscribeNewsletter } from "@/lib/actions/newsletter"
+import { toast } from "sonner"
 
 export function NewsletterCTA() {
   const [email, setEmail] = useState("")
@@ -18,9 +20,13 @@ export function NewsletterCTA() {
     e.preventDefault()
     if (!email || loading) return
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 800))
-    setSubmitted(true)
+    const res = await subscribeNewsletter(email)
     setLoading(false)
+    if (!res.ok) {
+      toast.error(res.error)
+      return
+    }
+    setSubmitted(true)
   }
 
   return (

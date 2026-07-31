@@ -17,7 +17,11 @@ import type { ProductVM, ReviewVM } from "@/lib/data/types"
 import { formatPrice, cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { useCartStore } from "@/stores/cart-store"
+import { useRouter } from "next/navigation"
 import { toggleWishlist } from "@/lib/actions/wishlist"
+import { submitReview } from "@/lib/actions/reviews"
+import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 
 const conditionColor: Record<string, string> = {
   mint:       "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
@@ -35,6 +39,7 @@ interface ProductDetailProps {
   reviews: ReviewVM[]
   avgRating: number | null
   wishlistedDefault: boolean
+  canReview: boolean
 }
 
 export function ProductDetail({
@@ -43,12 +48,42 @@ export function ProductDetail({
   reviews,
   avgRating,
   wishlistedDefault,
+  canReview,
 }: ProductDetailProps) {
+  const router = useRouter()
   const [wishlisted, setWishlisted] = useState(wishlistedDefault)
   const [pending, setPending] = useState(false)
   const [imgError, setImgError] = useState(false)
 
+  // Review form state
+  const [showReview, setShowReview] = useState(false)
+  const [rating, setRating] = useState(5)
+  const [reviewTitle, setReviewTitle] = useState("")
+  const [reviewBody, setReviewBody] = useState("")
+  const [savingReview, setSavingReview] = useState(false)
+
   const addItem = useCartStore((s) => s.addItem)
+
+  async function handleReviewSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSavingReview(true)
+    const res = await submitReview({
+      productId: product.id,
+      rating,
+      title: reviewTitle || undefined,
+      body: reviewBody || undefined,
+    })
+    setSavingReview(false)
+    if (!res.ok) {
+      toast.error(res.error)
+      return
+    }
+    toast.success("Thanks for your review!")
+    setShowReview(false)
+    setReviewTitle("")
+    setReviewBody("")
+    router.refresh()
+  }
 
   function handleAddToCart() {
     addItem(product)
@@ -323,12 +358,65 @@ export function ProductDetail({
         </div>
 
         {/* Reviews */}
-        {reviews.length > 0 && (
+        {(reviews.length > 0 || canReview) && (
           <div className="mt-20">
             <Separator className="mb-10 bg-white/5" />
-            <h2 className="mb-8 font-display text-2xl font-bold">
-              Reviews <GradientText>({reviews.length})</GradientText>
-            </h2>
+            <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="font-display text-2xl font-bold">
+                Reviews <GradientText>({reviews.length})</GradientText>
+              </h2>
+              {canReview && !showReview && (
+                <Button
+                  variant="outline"
+                  className="gap-2 border-white/10 hover:bg-white/5"
+                  onClick={() => setShowReview(true)}
+                >
+                  <Star className="h-4 w-4 text-amber-400" /> Write a review
+                </Button>
+              )}
+            </div>
+
+            {/* Write-a-review form */}
+            {canReview && showReview && (
+              <form onSubmit={handleReviewSubmit} className="glass-card mb-8 space-y-4 rounded-2xl p-6">
+                <div>
+                  <p className="mb-2 text-sm font-medium text-foreground">Your rating</p>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setRating(i + 1)}
+                        aria-label={`${i + 1} star${i ? "s" : ""}`}
+                        className="p-0.5"
+                      >
+                        <Star className={cn("h-6 w-6 transition-colors", i < rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground hover:text-amber-400/60")} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <Input
+                  placeholder="Review title (optional)"
+                  value={reviewTitle}
+                  onChange={(e) => setReviewTitle(e.target.value)}
+                  className="border-white/10 bg-white/5 focus-visible:ring-violet-500/50"
+                />
+                <Textarea
+                  placeholder="Share your experience with this item…"
+                  value={reviewBody}
+                  onChange={(e) => setReviewBody(e.target.value)}
+                  rows={4}
+                  className="resize-none border-white/10 bg-white/5 focus-visible:ring-violet-500/50"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="ghost" onClick={() => setShowReview(false)}>Cancel</Button>
+                  <Button type="submit" disabled={savingReview} className="gradient-brand border-0 text-white hover:opacity-90">
+                    {savingReview ? "Submitting…" : "Submit review"}
+                  </Button>
+                </div>
+              </form>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2">
               {reviews.map((r, i) => (
                 <motion.div

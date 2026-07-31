@@ -55,6 +55,7 @@ export default async function ProductPage({
       reviews={reviews}
       avgRating={avgRating}
       wishlistedDefault={wishlistedIds.has(product.id)}
+      canReview={Boolean(user && !user.isMock)}
     />
   )
 }

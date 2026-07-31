@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { GradientText } from "@/components/brand/gradient-text"
 import type { AdminUser } from "@/lib/data/admin"
+import { adminSetUserBanned } from "@/lib/actions/admin"
 import { formatDate } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -49,18 +50,24 @@ export function AdminUsersClient({ users }: { users: AdminUser[] }) {
     support:  users.filter((u) => u.role === "support").length,
   }
 
-  function toggleSuspend(id: string, name: string) {
+  const [busy, setBusy] = useState<string | null>(null)
+
+  async function toggleSuspend(id: string, name: string) {
+    const willSuspend = !suspended.has(id)
+    setBusy(id)
+    const res = await adminSetUserBanned(id, willSuspend)
+    setBusy(null)
+    if (!res.ok) {
+      toast.error(res.error)
+      return
+    }
     setSuspended((prev) => {
       const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-        toast.success(`${name} reinstated`)
-      } else {
-        next.add(id)
-        toast.error(`${name} suspended`)
-      }
+      if (willSuspend) next.add(id)
+      else next.delete(id)
       return next
     })
+    toast[willSuspend ? "error" : "success"](`${name} ${willSuspend ? "suspended" : "reinstated"}`)
   }
 
   return (
@@ -196,7 +203,8 @@ export function AdminUsersClient({ users }: { users: AdminUser[] }) {
 
                   <button
                     onClick={() => toggleSuspend(user.id, user.fullName)}
-                    className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+                    disabled={busy === user.id || user.role === "admin"}
+                    className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors disabled:opacity-40 ${
                       isSuspended
                         ? "text-emerald-400 hover:bg-emerald-500/10"
                         : "text-muted-foreground hover:bg-red-500/10 hover:text-red-400"
