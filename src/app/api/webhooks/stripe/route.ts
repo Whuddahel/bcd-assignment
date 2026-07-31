@@ -3,7 +3,10 @@ import type Stripe from "stripe"
 import { getStripe } from "@/lib/stripe/server"
 import { useLiveData, appConfig } from "@/lib/config"
 import { createSupabaseServerAdminClient } from "@/lib/supabase/server"
-
+import { sendEmail } from "@/lib/email/client"
+import OrderConfirmationEmail from "@/emails/order-confirmation"
+import { env } from "@/lib/env"
+import * as React from "react"
 type WebhookLineItem = {
   productId: string
   sellerId: string
@@ -84,6 +87,28 @@ async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
   }
 
   await createSellerTransfers(paymentIntent, lineItems)
+
+  // Send Order Confirmation Email
+  try {
+    const { data: authUser } = await supabase.auth.admin.getUserById(buyerId)
+    if (authUser && authUser.user?.email) {
+      await sendEmail({
+        to: authUser.user.email,
+        subject: `Your Aureon order #${order.id.slice(0, 8)} is confirmed!`,
+        react: (
+          <OrderConfirmationEmail
+            orderId={order.id.slice(0, 8)}
+            totalAmount={`$${(order.total_amount / 100).toFixed(2)}`}
+            items={lineItems.map(item => ({ title: item.title, quantity: item.qty }))}
+            siteUrl={env.NEXT_PUBLIC_APP_URL}
+          />
+        ),
+      })
+    }
+  } catch (err) {
+    // Non-critical: Log error but do not fail the request
+    console.error("Failed to send order confirmation email:", err)
+  }
 }
 
 async function createSellerTransfers(
