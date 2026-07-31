@@ -27,9 +27,23 @@ const typeColor: Record<string, string> = {
 }
 
 export function NotificationsDropdown() {
-  const { notifications, isOpen, unreadCount, closePanel, markRead, markAllRead } =
+  const { notifications, isOpen, unreadCount, closePanel, markRead, markAllRead, setNotifications } =
     useNotificationsStore()
   const panelRef = useRef<HTMLDivElement>(null)
+
+  // Hydrate from the database once on mount.
+  useEffect(() => {
+    let active = true
+    fetch("/api/notifications", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (active && Array.isArray(d.notifications)) setNotifications(d.notifications)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [setNotifications])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
