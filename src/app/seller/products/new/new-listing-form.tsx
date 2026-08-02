@@ -122,6 +122,11 @@ export function NewListingForm({ categories }: { categories: CategoryVM[] }) {
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 </div>
+                {categories.length === 0 && (
+                  <p className="text-[11px] text-red-400">
+                    No categories found. Your database may not be seeded — run <code>supabase/seed.sql</code>.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1.5">

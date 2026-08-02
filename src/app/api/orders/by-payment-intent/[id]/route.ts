@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
-import { useLiveData } from "@/lib/config"
+import { useLiveData, hasStripe } from "@/lib/config"
 import { createSupabaseServerAdminClient, createSupabaseServerClient } from "@/lib/supabase/server"
+import { fulfilPaymentIntentById } from "@/lib/stripe/fulfillment"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!useLiveData) {
@@ -19,18 +20,32 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 
   const admin = await createSupabaseServerAdminClient()
-  const { data: order, error } = await admin
-    .from("orders")
-    .select("id, buyer_id, status, total_amount, platform_fee, stripe_payment_status, created_at")
-    .eq("stripe_payment_intent_id", paymentIntentId)
-    .maybeSingle()
+
+  const ORDER_COLS = "id, buyer_id, status, total_amount, platform_fee, stripe_payment_status, created_at"
+
+  async function lookup() {
+    return admin.from("orders").select(ORDER_COLS).eq("stripe_payment_intent_id", paymentIntentId).maybeSingle()
+  }
+
+  let { data: order, error } = await lookup()
 
   if (error) {
     return NextResponse.json({ error: "Failed to look up order." }, { status: 500 })
   }
 
-  // Not found yet is expected right after payment — Stripe's webhook can
-  // lag a second or two behind the browser redirect. Not an error.
+  // If the webhook hasn't created the order yet (or isn't wired up in this
+  // environment), fulfil it ourselves straight from Stripe. Idempotent, and
+  // only fulfils the signed-in user's own PaymentIntent.
+  if (!order && hasStripe) {
+    try {
+      await fulfilPaymentIntentById(paymentIntentId, user.id)
+      ;({ data: order } = await lookup())
+    } catch (err) {
+      console.error("by-payment-intent: fulfilment attempt failed", err)
+    }
+  }
+
+  // Still nothing means the payment hasn't succeeded yet — not an error.
   if (!order) {
     return NextResponse.json({ order: null }, { status: 200 })
   }
