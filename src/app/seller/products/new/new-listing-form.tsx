@@ -22,6 +22,7 @@ export function NewListingForm({ categories }: { categories: CategoryVM[] }) {
     title: "", category: "", condition: "excellent" as (typeof CONDITIONS)[number],
     price: "", description: "", imageUrl: "",
   })
+  const [attributes, setAttributes] = useState<{ key: string; value: string }[]>([])
 
   function update(k: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -34,6 +35,15 @@ export function NewListingForm({ categories }: { categories: CategoryVM[] }) {
       return
     }
     setSaving(true)
+
+    // Convert [{key: "Brand", value: "Rolex"}] into {"Brand": "Rolex"}
+    const attributesRecord: Record<string, string> = {}
+    attributes.forEach((attr) => {
+      if (attr.key.trim() && attr.value.trim()) {
+        attributesRecord[attr.key.trim()] = attr.value.trim()
+      }
+    })
+
     const res = await createProduct({
       title: form.title,
       description: form.description,
@@ -42,6 +52,7 @@ export function NewListingForm({ categories }: { categories: CategoryVM[] }) {
       price: Number(form.price),
       status,
       imageUrl: form.imageUrl.trim() || undefined,
+      attributes: attributesRecord,
     })
     setSaving(false)
 
@@ -155,6 +166,51 @@ export function NewListingForm({ categories }: { categories: CategoryVM[] }) {
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-3 pt-4 border-t border-white/5">
+              <Label className="text-xs text-muted-foreground">Specifications & Attributes</Label>
+              {attributes.map((attr, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input 
+                    placeholder="e.g. Brand" 
+                    value={attr.key} 
+                    onChange={(e) => {
+                      const newAttrs = [...attributes];
+                      newAttrs[index].key = e.target.value;
+                      setAttributes(newAttrs);
+                    }} 
+                    className="border-white/10 bg-white/5 focus-visible:ring-violet-500/50" 
+                  />
+                  <Input 
+                    placeholder="e.g. Rolex" 
+                    value={attr.value} 
+                    onChange={(e) => {
+                      const newAttrs = [...attributes];
+                      newAttrs[index].value = e.target.value;
+                      setAttributes(newAttrs);
+                    }} 
+                    className="border-white/10 bg-white/5 focus-visible:ring-violet-500/50" 
+                  />
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    onClick={() => setAttributes(attributes.filter((_, i) => i !== index))}
+                    className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={() => setAttributes([...attributes, { key: "", value: "" }])}
+                className="border-white/10 hover:bg-white/5 text-xs"
+              >
+                + Add Attribute
+              </Button>
             </div>
 
             <div className="space-y-1.5">
