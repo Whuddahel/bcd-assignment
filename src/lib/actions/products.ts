@@ -14,7 +14,7 @@ export type ActionResult =
 const productSchema = z.object({
   title: z.string().min(3, "Title is too short").max(160),
   description: z.string().max(4000).optional().default(""),
-  categoryId: z.string().uuid("Pick a category"),
+  categoryId: z.string().min(1, "Pick a category"),
   condition: z.enum(["mint", "excellent", "very_good", "good", "fair"]),
   price: z.number().positive("Price must be greater than 0"),
   originalPrice: z.number().positive().optional(),
