@@ -48,6 +48,7 @@ export type ProductVM = {
   certificateUrl?: string
   attributes: Record<string, string>
   images: string[]
+  createdAt: string
 }
 
 // Category-flavoured gradient palettes. Several per category; a stable hash of
@@ -181,6 +182,7 @@ export function mapProduct(row: ProductRow): ProductVM {
     certificateUrl: row.certificate_url ?? undefined,
     attributes: normalizeAttributes(row.attributes),
     images,
+    createdAt: row.created_at,
   }
 }
 

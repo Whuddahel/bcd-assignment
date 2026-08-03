@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Search, SlidersHorizontal, X, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -49,6 +49,18 @@ export function BrowseClient({
   const [sort,      setSort]      = useState("trending")
   const [filtersOpen, setFiltersOpen] = useState(false)
 
+  // Sync URL search params with state when navigating via the Header dropdown
+  useEffect(() => {
+    if (initialCategory !== undefined) {
+      setCategory(initialCategory)
+    }
+  }, [initialCategory])
+  useEffect(() => {
+    if (initialQuery !== undefined) {
+      setQuery(initialQuery)
+    }
+  }, [initialQuery])
+
   const wishlisted = useMemo(() => new Set(wishlistedIds), [wishlistedIds])
 
   const filtered = useMemo(() => {
@@ -71,7 +83,8 @@ export function BrowseClient({
     }
 
     if (sort === "trending")    items.sort((a, b) => b.wishlistCount - a.wishlistCount)
-    else if (sort === "newest") items.sort((a, b) => b.viewCount - a.viewCount)
+    // else if (sort === "newest") items.sort((a, b) => b.viewCount - a.viewCount)
+    else if (sort === "newest") items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     else if (sort === "price-asc")  items.sort((a, b) => a.price - b.price)
     else if (sort === "price-desc") items.sort((a, b) => b.price - a.price)
 
@@ -133,7 +146,7 @@ export function BrowseClient({
                   onChange={(e) => setSort(e.target.value)}
                   className="h-11 appearance-none rounded-lg border border-white/10 bg-white/5 pl-3 pr-8 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-violet-500/50"
                 >
-                  {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  {SORT_OPTIONS.map(o => <option key={o.value} value={o.value} className="bg-zinc-900 text-white">{o.label}</option>)}
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               </div>
