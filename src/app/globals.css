@@ -143,6 +143,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Native <select> dropdown options render with the OS default (white)
+   background; force them onto the app's dark surface so the text is readable
+   in dark mode instead of white-on-white. */
+option {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+}
+
 /* ── Brand gradient utilities ── */
 .gradient-brand {
   background: linear-gradient(
