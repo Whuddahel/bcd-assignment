@@ -7,11 +7,17 @@ type RouteGuard = {
   roles: string[]
 }
 
+// Patterns are anchored with a trailing boundary (`/` or end of string) so a
+// guard never leaks onto a sibling route — e.g. `/seller` must NOT match the
+// PUBLIC `/sellers` storefront/directory, or customers get bounced to /account.
 const ROUTE_GUARDS: RouteGuard[] = [
-  { pattern: /^\/account/, roles: ["customer", "seller", "admin", "support"] },
-  { pattern: /^\/seller/, roles: ["seller", "admin"] },
-  { pattern: /^\/admin/, roles: ["admin"] },
-  { pattern: /^\/support/, roles: ["support", "admin"] },
+  { pattern: /^\/account(?:\/|$)/, roles: ["customer", "seller", "admin", "support"] },
+  // The "become a seller" application must be reachable by any signed-in user
+  // (typically a customer). Listed BEFORE the /seller guard so it wins.
+  { pattern: /^\/seller\/apply(?:\/|$)/, roles: ["customer", "seller", "admin", "support"] },
+  { pattern: /^\/seller(?:\/|$)/, roles: ["seller", "admin"] },
+  { pattern: /^\/admin(?:\/|$)/, roles: ["admin"] },
+  { pattern: /^\/support(?:\/|$)/, roles: ["support", "admin"] },
 ]
 
 /** Where to send a signed-in user who lacks the role for the route. */
