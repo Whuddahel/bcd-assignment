@@ -279,11 +279,18 @@ export function Header() {
               <div className="relative hidden sm:block" ref={accountRef}>
                 <button
                   onClick={() => setAccountOpen((o) => !o)}
-                  className="ml-1 flex h-8 w-8 items-center justify-center rounded-full gradient-brand text-xs font-bold text-white shadow-md transition-all hover:opacity-90 hover:shadow-lg"
+                  className={cn(
+                    "ml-1 flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-bold text-white shadow-md transition-all hover:opacity-90 hover:shadow-lg",
+                    !user.avatarUrl ? "gradient-brand" : "bg-white/5 border border-white/10"
+                  )}
                   aria-label="Account menu"
                   aria-expanded={accountOpen}
                 >
-                  {initialsOf(user)}
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                  ) : (
+                    initialsOf(user)
+                  )}
                 </button>
 
                 <AnimatePresence>

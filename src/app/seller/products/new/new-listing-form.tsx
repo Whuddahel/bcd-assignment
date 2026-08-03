@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Upload, ArrowRight, ChevronDown } from "lucide-react"
+import { Upload, ArrowRight, ChevronDown, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,17 +12,43 @@ import type { CategoryVM } from "@/lib/data/types"
 import { createProduct } from "@/lib/actions/products"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 
 const CONDITIONS = ["mint", "excellent", "very_good", "good", "fair"] as const
 
-export function NewListingForm({ categories }: { categories: CategoryVM[] }) {
+export function NewListingForm({ categories, userId }: { categories: CategoryVM[], userId: string }) {
   const router = useRouter()
+  const supabase = createSupabaseBrowserClient()
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [form, setForm] = useState({
     title: "", category: "", condition: "excellent" as (typeof CONDITIONS)[number],
     price: "", description: "", imageUrl: "",
   })
   const [attributes, setAttributes] = useState<{ key: string; value: string }[]>([])
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    
+    // Create a unique file name using the userId and a random string
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${userId}-${Math.random().toString(36).slice(2)}.${fileExt}`
+    // Upload to the "products" bucket
+    const { error: uploadError } = await supabase.storage
+      .from('products')
+      .upload(fileName, file)
+    if (uploadError) {
+      toast.error('Error uploading image', { description: uploadError.message })
+      setUploading(false)
+      return
+    }
+    // Get the public URL and update the form state
+    const { data } = supabase.storage.from('products').getPublicUrl(fileName)
+    setForm((f) => ({ ...f, imageUrl: data.publicUrl }))
+    setUploading(false)
+  }
 
   function update(k: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -82,17 +108,39 @@ export function NewListingForm({ categories }: { categories: CategoryVM[] }) {
         <div className="glass-card rounded-2xl p-6">
           <h2 className="mb-4 text-sm font-semibold text-foreground">Photos</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <button
-              type="button"
-              className="col-span-2 flex aspect-square items-center justify-center rounded-xl border-2 border-dashed border-white/10 bg-white/2 transition-all hover:border-violet-500/40 hover:bg-violet-500/5 sm:col-span-2"
-            >
-              <div className="text-center">
-                <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                <p className="mt-2 text-sm font-medium text-muted-foreground">Main photo</p>
-                <p className="text-xs text-muted-foreground/60">Paste an image URL below</p>
-              </div>
-            </button>
-            {[1, 2, 3, 4].map((n) => (
+                        <label className="relative col-span-2 flex aspect-square cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-white/10 bg-white/2 transition-all hover:border-violet-500/40 hover:bg-violet-500/5 sm:col-span-2">
+              {form.imageUrl ? (
+                <>
+                  <img src={form.imageUrl} alt="Preview" className="absolute inset-0 h-full w-full object-cover" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-midnight/60 opacity-0 transition-opacity hover:opacity-100">
+                    <Upload className="mx-auto h-8 w-8 text-white" />
+                    <p className="mt-2 text-sm font-medium text-white">Change photo</p>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center p-4">
+                  {uploading ? (
+                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-violet-400" />
+                  ) : (
+                    <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                  )}
+                  <p className="mt-2 text-sm font-medium text-muted-foreground">
+                    {uploading ? "Uploading..." : "Upload main photo"}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground/60">Click to browse your files</p>
+                </div>
+              )}
+              
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleImageUpload} 
+                disabled={uploading}
+              />
+            </label>
+
+            {/* {[1, 2, 3, 4].map((n) => (
               <button
                 key={n}
                 type="button"
@@ -100,7 +148,7 @@ export function NewListingForm({ categories }: { categories: CategoryVM[] }) {
               >
                 <Upload className="h-5 w-5 text-muted-foreground/40" />
               </button>
-            ))}
+            ))} */}
           </div>
           <div className="mt-4 space-y-1.5">
             <Label htmlFor="imageUrl" className="text-xs text-muted-foreground">Cover image URL (optional)</Label>

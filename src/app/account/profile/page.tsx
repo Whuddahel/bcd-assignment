@@ -156,7 +156,7 @@ export default function ProfilePage() {
           <h2 className="mb-4 text-sm font-semibold text-foreground">Profile Photo</h2>
           <div className="flex items-center gap-5">
             <div className="relative">
-              <div className="flex h-20 w-20 overflow-hidden items-center justify-center rounded-2xl gradient-brand text-3xl font-bold text-white shadow-lg">
+              <div className="flex h-40 w-40 overflow-hidden items-center justify-center rounded-2xl gradient-brand text-3xl font-bold text-white shadow-lg">
                 {/* Display the image if they have one, otherwise show initials */}
                 {form.avatarUrl ? (
                   <img src={form.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />

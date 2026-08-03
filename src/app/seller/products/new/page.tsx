@@ -6,7 +6,8 @@ import { NewListingForm } from "./new-listing-form"
 export const metadata: Metadata = { title: "New Listing" }
 
 export default async function NewListingPage() {
-  await requireUser(["seller", "admin"])
+  const user = await requireUser(["seller", "admin"])
   const categories = await getCategories()
-  return <NewListingForm categories={categories} />
+  return <NewListingForm categories={categories} userId={user.id} />
 }
+
