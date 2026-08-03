@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { GradientText } from "@/components/brand/gradient-text"
 import { ProductCard } from "@/components/shop/product-card"
+import { ProvenanceCard } from "@/components/blockchain/provenance-card"
 import type { ProductVM, ReviewVM } from "@/lib/data/types"
 import { formatPrice, cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -40,6 +41,7 @@ interface ProductDetailProps {
   avgRating: number | null
   wishlistedDefault: boolean
   canReview: boolean
+  blockchainTokenId: string | null
 }
 
 export function ProductDetail({
@@ -49,6 +51,7 @@ export function ProductDetail({
   avgRating,
   wishlistedDefault,
   canReview,
+  blockchainTokenId,
 }: ProductDetailProps) {
   const router = useRouter()
   const [wishlisted, setWishlisted] = useState(wishlistedDefault)
@@ -335,25 +338,8 @@ export function ProductDetail({
               </div>
             )}
 
-            {/* Provenance / blockchain placeholder */}
-            <div className="mt-6 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 rounded-lg bg-violet-500/20 p-2">
-                  <Shield className="h-4 w-4 text-violet-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Provenance Verified</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {product.provenanceNotes ??
-                      "This item has been authenticated by our in-house team."}
-                    {/* BLOCKCHAIN Phase 2: On-chain provenance record will display here */}
-                  </p>
-                  <Badge className="mt-2 bg-violet-500/20 text-violet-300 border-violet-500/30 text-[10px]">
-                    Blockchain verification — coming soon
-                  </Badge>
-                </div>
-              </div>
-            </div>
+            {/* On-chain provenance & authenticity (Phase 2) */}
+            <ProvenanceCard tokenId={blockchainTokenId} />
           </motion.div>
         </div>
 

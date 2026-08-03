@@ -42,3 +42,8 @@ next-env.d.ts
 # Supabase CLI local state (config.toml, migrations, seed and templates ARE tracked)
 supabase/.branches/
 supabase/.temp/
+# Hardhat (Phase 2)
+hardhat/node_modules
+hardhat/artifacts
+hardhat/cache
+hardhat/typechain-types

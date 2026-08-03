@@ -2,10 +2,11 @@
 
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Shield, ExternalLink, ArrowRight, Clock, Package } from "lucide-react"
+import { Shield, ExternalLink, Clock, Package } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { GradientText } from "@/components/brand/gradient-text"
+import { CollectionCertificate } from "@/components/blockchain/collection-certificate"
 import { formatPrice, formatDate, cn } from "@/lib/utils"
 
 const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number]
@@ -18,9 +19,10 @@ export type CollectionEntry = {
   purchasedDate: string
   purchasePrice: number
   currentValue: number
+  tokenId?: string | null
 }
 
-export function CollectionClient({ items }: { items: CollectionEntry[] }) {
+export function CollectionClient({ items, userId }: { items: CollectionEntry[]; userId: string }) {
   const totalValue = items.reduce((s, p) => s + p.currentValue, 0)
   const totalPaid = items.reduce((s, p) => s + p.purchasePrice, 0)
   const appreciation = totalValue - totalPaid
@@ -34,7 +36,7 @@ export function CollectionClient({ items }: { items: CollectionEntry[] }) {
           My <GradientText>Collection</GradientText>
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Your authenticated collectibles — blockchain provenance coming in Phase 2.
+          Your authenticated collectibles, each with immutable on-chain provenance.
         </p>
       </div>
 
@@ -66,7 +68,6 @@ export function CollectionClient({ items }: { items: CollectionEntry[] }) {
         transition={{ duration: 0.5, delay: 0.25, ease: EASE }}
         className="mb-8 rounded-2xl border border-violet-500/20 bg-gradient-to-r from-violet-500/10 via-pink-500/5 to-amber-500/5 p-5"
       >
-        {/* BLOCKCHAIN: Phase 2 — this panel becomes the on-chain certificate viewer. */}
         <div className="flex items-start gap-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-500/20">
             <Shield className="h-6 w-6 text-violet-400" />
@@ -74,14 +75,13 @@ export function CollectionClient({ items }: { items: CollectionEntry[] }) {
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="font-semibold text-foreground">Blockchain Provenance</h3>
-              <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/30 text-[10px]">
-                Phase 2 — Coming soon
+              <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 text-[10px]">
+                Live
               </Badge>
             </div>
             <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
-              Every item in your collection will have an immutable on-chain authenticity
-              certificate and full ownership transfer history — so you can prove provenance
-              forever, not just while you hold the receipt.
+              Every delivered item carries an immutable on-chain authenticity certificate and
+              full ownership history — expand any item below to verify its provenance.
             </p>
           </div>
         </div>
@@ -154,14 +154,7 @@ export function CollectionClient({ items }: { items: CollectionEntry[] }) {
                   </div>
 
                   <div className="border-t border-white/5 bg-white/1 px-5 py-2.5">
-                    <p className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                      <Shield className="h-3 w-3 text-violet-400/50" />
-                      Blockchain certificate:
-                      <span className="text-violet-400/50">Phase 2 — Not yet minted</span>
-                      <span className="ml-auto flex items-center gap-1 text-violet-400/50">
-                        Learn more <ArrowRight className="h-3 w-3" />
-                      </span>
-                    </p>
+                    <CollectionCertificate tokenId={item.tokenId} userId={userId} />
                   </div>
                 </div>
               </motion.div>

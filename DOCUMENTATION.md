@@ -24,6 +24,7 @@
 7. [Feature reference](#7-feature-reference)
 8. [Security model (RLS + roles)](#8-security-model-rls--roles)
 9. [Test accounts](#9-test-accounts)
+10. [Blockchain (Phase 2)](#10-blockchain-phase-2)
 
 ---
 
@@ -326,3 +327,73 @@ Seeded by `supabase/seed.sql` — **all passwords `test1234!`**:
 
 > These exist only in seeded/test databases. Rotate keys and remove seed users before any
 > real production launch.
+
+---
+
+## 10. Blockchain (Phase 2)
+
+An on-chain provenance & authenticity layer running on a **local Hardhat node** —
+no testnet, no MetaMask, no browser wallet. Contracts live in `hardhat/`; the
+frontend integration lives in `src/lib/blockchain/`.
+
+### 10.1 Contracts
+
+| Contract | Responsibility | Key functions |
+| --- | --- | --- |
+| `AureonAsset` (ERC-721 + AccessControl + Ownable) | The digital twin + on-chain ownership history | `mintDigitalTwin` (SELLER_ROLE), `transferAsset` (owner **or** OPERATOR_ROLE), `getProvenance` (view), `grantSellerRole`/`revokeSellerRole` (owner) |
+| `AureonAttestor` (AccessControl) | One-time authenticity attestations, kept separate from ownership | `attestAuthenticity` (ATTESTOR_ROLE), `getAttestation` (view) |
+
+`mintDigitalTwin` records a `Minted` provenance entry; `transferAsset` appends a
+`Transferred` entry. `attestAuthenticity` reverts on a second attempt for the same
+token. Solidity `0.8.24`, EVM target `cancun` (OpenZeppelin v5.4 uses `mcopy`).
+
+### 10.2 The no-wallet, server-signer model
+
+Buyers and sellers hold no keys. The platform holds **one operator key**
+(`BLOCKCHAIN_OPERATOR_KEY`, defaulting to Hardhat account #0 for local dev) that
+signs every state-changing call from the server:
+
+- **Writes** (`mint`, `attest`, `transfer`) → server actions in
+  `src/lib/actions/blockchain.ts` → `src/lib/blockchain/server.ts` (marked
+  `server-only`, so the key can never be bundled into the browser).
+- **Reads** (`getProvenance`, `getAttestation`) → unsigned, run client-side from
+  `src/lib/blockchain/reads.ts` against `NEXT_PUBLIC_BLOCKCHAIN_RPC_URL`.
+
+Off-chain ids map to on-chain values deterministically (`src/lib/blockchain/identity.ts`):
+
+- **productId** — `keccak256(supabase_uuid)` as a `uint256`.
+- **buyer address** — `getAddress(keccak256(user_id).slice(0,42))`, so ownership is
+  tracked against a stable, wallet-less address per user.
+
+### 10.3 The Supabase ↔ chain bridge
+
+Migration `20240101000002_blockchain.sql` adds `products.blockchain_token_id`
+(+ `blockchain_minted_at`, `blockchain_attested_at`). Minting/attesting writes the
+token id back here (`src/lib/data/blockchain.ts` reads it). Every read is
+degrade-safe: a missing column or an offline node resolves to "not minted" rather
+than throwing, so the app runs identically before and after Phase 2 is applied.
+
+### 10.4 Integration points (hooks + components)
+
+| UI surface | Hook | Component |
+| --- | --- | --- |
+| Product detail — provenance card | `useProvenance` | `ProvenanceCard` |
+| My Collection — per-item certificate | `useProvenance` / `useCollection` | `CollectionCertificate` |
+| Admin → Products — attest | `useAttest` | `AttestButton` |
+| Seller → Listings — mint | `useMint` | `MintButton` |
+| Order → delivered → transfer | — (server) | `api/orders/[id]/status` |
+
+### 10.5 Running & testing
+
+Setup and the exact three-terminal run order are in the README's
+[Blockchain Setup](../README.md#blockchain-setup). Contract tests:
+
+```bash
+cd hardhat && npx hardhat test     # 18 passing
+```
+
+`AureonAsset.test.js` covers seller-only minting, the mint event/args,
+provenance after mint and after transfer, non-owner transfer rejection, and
+operator-on-behalf transfer. `AureonAttestor.test.js` covers attestor-only
+attestation, the event/args, double-attest rejection, and `getAttestation` for
+attested vs unattested tokens.

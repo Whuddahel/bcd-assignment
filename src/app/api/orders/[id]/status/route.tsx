@@ -5,6 +5,8 @@ import { createSupabaseServerAdminClient } from "@/lib/supabase/server"
 import { sendEmail } from "@/lib/email/client"
 import ShippingUpdateEmail from "@/emails/shipping-update"
 import { env } from "@/lib/env"
+import { isBlockchainConfigured } from "@/lib/blockchain/config"
+import { transferToBuyer } from "@/lib/blockchain/server"
 import * as React from "react"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -86,6 +88,30 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     } catch (err) {
       // Non-critical: Log error but do not fail the request
       console.error("Failed to send shipping update email:", err)
+    }
+  }
+
+  // On delivery, record the ownership transfer on-chain for every minted item in
+  // the order. Non-critical: a chain hiccup must not block the status update.
+  if (status === "delivered" && isBlockchainConfigured) {
+    try {
+      const { data: lineItems } = await admin
+        .from("order_items")
+        .select("product_id, products(blockchain_token_id)")
+        .eq("order_id", order.id)
+
+      for (const item of lineItems ?? []) {
+        const tokenId = (item.products as { blockchain_token_id?: string | null } | null)
+          ?.blockchain_token_id
+        if (!tokenId) continue
+        try {
+          await transferToBuyer(tokenId, order.buyer_id)
+        } catch (err) {
+          console.error(`Failed to transfer token ${tokenId} on delivery:`, err)
+        }
+      }
+    } catch (err) {
+      console.error("Blockchain transfer on delivery failed:", err)
     }
   }
 

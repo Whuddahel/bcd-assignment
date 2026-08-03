@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { requireUser } from "@/lib/auth/session"
 import { getOrdersForBuyer } from "@/lib/data/orders"
+import { getBlockchainRefs } from "@/lib/data/blockchain"
 import { CollectionClient, type CollectionEntry } from "./collection-client"
 
 export const metadata: Metadata = { title: "My Collection" }
@@ -19,19 +20,24 @@ export default async function CollectionPage() {
   const user = await requireUser()
   const orders = await getOrdersForBuyer(user.id)
 
-  const items: CollectionEntry[] = orders
-    .filter((o) => OWNED_STATUSES.includes(o.status))
-    .flatMap((o) =>
-      o.items.map((it) => ({
-        id: it.id,
-        title: it.title,
-        slug: it.slug,
-        gradient: it.gradient,
-        purchasedDate: o.date,
-        purchasePrice: it.price,
-        currentValue: Math.round(it.price * upliftFactor(it.productId)),
-      })),
-    )
+  const owned = orders.filter((o) => OWNED_STATUSES.includes(o.status))
 
-  return <CollectionClient items={items} />
+  // Look up on-chain token ids for every owned product in one query.
+  const productIds = [...new Set(owned.flatMap((o) => o.items.map((it) => it.productId)))]
+  const refs = await getBlockchainRefs(productIds)
+
+  const items: CollectionEntry[] = owned.flatMap((o) =>
+    o.items.map((it) => ({
+      id: it.id,
+      title: it.title,
+      slug: it.slug,
+      gradient: it.gradient,
+      purchasedDate: o.date,
+      purchasePrice: it.price,
+      currentValue: Math.round(it.price * upliftFactor(it.productId)),
+      tokenId: refs.get(it.productId)?.tokenId ?? null,
+    })),
+  )
+
+  return <CollectionClient items={items} userId={user.id} />
 }

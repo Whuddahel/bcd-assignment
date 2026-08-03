@@ -133,6 +133,9 @@ export interface Database {
           attributes: Json
           provenance_notes: string | null
           certificate_url: string | null
+          blockchain_token_id: string | null
+          blockchain_minted_at: string | null
+          blockchain_attested_at: string | null
           is_featured: boolean
           is_trending: boolean
           view_count: number
@@ -156,6 +159,9 @@ export interface Database {
           attributes?: Json
           provenance_notes?: string | null
           certificate_url?: string | null
+          blockchain_token_id?: string | null
+          blockchain_minted_at?: string | null
+          blockchain_attested_at?: string | null
           is_featured?: boolean
           is_trending?: boolean
           view_count?: number

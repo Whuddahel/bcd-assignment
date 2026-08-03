@@ -9,8 +9,11 @@ import { Input } from "@/components/ui/input"
 import { GradientText } from "@/components/brand/gradient-text"
 import type { ProductVM } from "@/lib/data/types"
 import { adminSetProductStatus } from "@/lib/actions/admin"
+import { AttestButton } from "@/components/blockchain/attest-button"
 import { formatPrice } from "@/lib/utils"
 import { toast } from "sonner"
+
+export type BlockchainState = { tokenId: string | null; attested: boolean }
 
 type TabKey = "all" | "active" | "pending" | "draft" | "sold"
 
@@ -29,7 +32,13 @@ const statusStyle: Record<string, string> = {
   sold:    "border-sky-500/20 text-sky-400",
 }
 
-export function AdminProductsClient({ products }: { products: ProductVM[] }) {
+export function AdminProductsClient({
+  products,
+  blockchain,
+}: {
+  products: ProductVM[]
+  blockchain: Record<string, BlockchainState>
+}) {
   const [tab,   setTab]   = useState<TabKey>("all")
   const [query, setQuery] = useState("")
   const [items, setItems] = useState<ProductVM[]>(products)
@@ -190,6 +199,11 @@ export function AdminProductsClient({ products }: { products: ProductVM[] }) {
 
                 {/* Actions */}
                 <div className="flex items-center gap-1">
+                  <AttestButton
+                    productId={p.id}
+                    minted={Boolean(blockchain[p.id]?.tokenId)}
+                    attested={blockchain[p.id]?.attested}
+                  />
                   <Button
                     size="icon"
                     variant="ghost"

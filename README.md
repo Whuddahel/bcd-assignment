@@ -16,6 +16,7 @@ Built with **Next.js 16** (App Router, React 19), **Supabase** (Postgres + Auth 
 - [Environment variables](#environment-variables)
 - [Live data & service configuration](#live-data--service-configuration)
 - [Database](#database)
+- [Blockchain (Phase 2)](#blockchain-phase-2)
 - [Authentication](#authentication)
 - [Project structure](#project-structure)
 - [Deployment](#deployment)
@@ -113,6 +114,9 @@ Schema and seed data live in [`supabase/`](supabase/).
 - `migrations/20240101000000_initial_schema.sql` — 14 tables, enums, indexes
   (including a full-text index on products), triggers, and Row Level Security
   policies for all four roles.
+- `migrations/20240101000002_blockchain.sql` — **Phase 2**: adds
+  `products.blockchain_token_id` (+ `minted_at`/`attested_at`), the bridge to the
+  on-chain provenance. See [Blockchain (Phase 2)](#blockchain-phase-2).
 - `seed.sql` — 20 users, 10 sellers, 6 categories, 50 products, orders, reviews, and
   support tickets. Every seeded account uses the password `test1234!`.
 - `config.toml` — Supabase CLI configuration for the local stack.
@@ -144,6 +148,91 @@ supabase db push
 ```
 
 See [docs/supabase-setup.md](docs/supabase-setup.md) for the full walkthrough.
+
+---
+
+## Blockchain (Phase 2)
+
+Phase 2 adds an on-chain **provenance & authenticity** layer: every listing can be
+minted as a unique ERC-721 "digital twin" whose ownership history and authenticity
+attestation are recorded immutably on-chain. It runs entirely on a **local Hardhat
+node** — no testnet, no MetaMask, no browser wallet. All contracts live in
+[`hardhat/`](hardhat/); the frontend integration lives in
+[`src/lib/blockchain/`](src/lib/blockchain/).
+
+**Contracts** ([hardhat/contracts/](hardhat/contracts/)):
+
+- `AureonAsset.sol` — ERC-721 digital twin. `mintDigitalTwin` (sellers),
+  `transferAsset` (owner or platform operator — called automatically on delivery),
+  `getProvenance` (public), plus `grantSellerRole`/`revokeSellerRole` via OpenZeppelin
+  `AccessControl` + `Ownable`.
+- `AureonAttestor.sol` — one-time authenticity attestations. `attestAuthenticity`
+  (admins only), `getAttestation` (public).
+
+**No wallets, by design.** Buyers and sellers have no keys. The platform holds a
+single **server-side operator key** (Hardhat account #0 in local dev) that signs all
+platform actions — mint, attest, transfer — from server actions. The private key
+never reaches the browser. Reads (`getProvenance`, `getAttestation`) are unsigned and
+run straight from the client. Buyer "addresses" are derived deterministically from
+their Supabase user id, so ownership works without anyone holding a wallet.
+
+### Blockchain Setup
+
+Apply the Phase 2 migration once (adds the token-id bridge column):
+
+```bash
+supabase db push      # or paste supabase/migrations/20240101000002_blockchain.sql
+                      # into the Supabase SQL editor
+```
+
+Install the Hardhat toolchain the first time:
+
+```bash
+cd hardhat && npm install
+```
+
+Then run the three terminals **in order**:
+
+```bash
+# Terminal 1 — start the local blockchain
+cd hardhat
+npx hardhat node
+
+# Terminal 2 — deploy contracts, then seed demo provenance
+cd hardhat
+npx hardhat run scripts/deploy.js --network localhost
+npx hardhat run scripts/seed-demo.js --network localhost
+
+# Terminal 3 — start the app
+npm run dev
+```
+
+Open <http://localhost:3000>. `deploy.js` writes the contract addresses + ABIs to
+[`src/lib/blockchain/deployments.json`](src/lib/blockchain/deployments.json)
+automatically (no copy-paste), and `seed-demo.js` mints 5 twins, attests 3, transfers
+1, and writes the token ids back into Supabase — so provenance is visible immediately.
+
+Run the contract tests any time with:
+
+```bash
+cd hardhat && npx hardhat test     # 18 passing
+```
+
+Where it shows up in the UI:
+
+| Placeholder | Now | Component |
+| --- | --- | --- |
+| Product detail — provenance card | Live chain of custody + attestation badge | `ProvenanceCard` |
+| My Collection — certificate | On-chain ownership verification per item | `CollectionCertificate` |
+| Admin → Products — attest | "Attest Authenticity" button | `AttestButton` |
+| Seller → Listings — mint | "Mint Digital Twin" button | `MintButton` |
+| Order delivered | Auto `transferAsset` to buyer | `api/orders/[id]/status` |
+
+> Everything degrades gracefully: if the node isn't running or a product isn't
+> minted, the UI shows a clean "not yet on blockchain" state instead of erroring.
+
+The config is structured to add a real network later (see the commented `sepolia`
+block in [hardhat.config.js](hardhat/hardhat.config.js)) without touching app code.
 
 ---
 

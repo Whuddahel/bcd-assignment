@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { GradientText } from "@/components/brand/gradient-text"
 import type { ProductVM } from "@/lib/data/types"
 import { deleteProduct } from "@/lib/actions/products"
+import { MintButton } from "@/components/blockchain/mint-button"
 import { formatPrice } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -20,7 +21,13 @@ const STATUS_TABS: { value: StatusTab; label: string }[] = [
   { value: "sold",   label: "Sold"         },
 ]
 
-export function ProductsClient({ initialProducts }: { initialProducts: ProductVM[] }) {
+export function ProductsClient({
+  initialProducts,
+  tokenIds,
+}: {
+  initialProducts: ProductVM[]
+  tokenIds: Record<string, string | null>
+}) {
   const [tab, setTab] = useState<StatusTab>("all")
   const [products, setProducts] = useState<ProductVM[]>(initialProducts)
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -172,6 +179,9 @@ export function ProductsClient({ initialProducts }: { initialProducts: ProductVM
 
                 {/* Actions */}
                 <div className="flex items-center gap-1">
+                  {(p.status === "active" || tokenIds[p.id]) && (
+                    <MintButton productId={p.id} tokenId={tokenIds[p.id]} compact />
+                  )}
                   <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" asChild>
                     <Link href={`/product/${p.slug}`} aria-label="View">
                       <Eye className="h-3.5 w-3.5" />

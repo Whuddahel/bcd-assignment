@@ -52,6 +52,21 @@ const envSchema = z.object({
   APPLE_TEAM_ID: z.string().optional(),
   APPLE_KEY_ID: z.string().optional(),
   APPLE_PRIVATE_KEY: z.string().optional(),
+
+  // ── Blockchain (Phase 2 — local Hardhat node) ──
+  // Client-visible RPC endpoint the browser reads provenance from.
+  NEXT_PUBLIC_BLOCKCHAIN_RPC_URL: z.string().default("http://127.0.0.1:8545"),
+  NEXT_PUBLIC_BLOCKCHAIN_CHAIN_ID: z
+    .string()
+    .optional()
+    .default("31337")
+    .transform((v) => Number(v))
+    .pipe(z.number().int().positive()),
+  // Server-only signer for platform actions (mint/attest/transfer). Defaults to
+  // Hardhat's well-known account #0 key — LOCAL DEV ONLY, never a real key.
+  BLOCKCHAIN_OPERATOR_KEY: z
+    .string()
+    .default("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"),
 })
 
 function parseEnv() {
@@ -69,6 +84,8 @@ function parseEnv() {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_BLOCKCHAIN_RPC_URL: process.env.NEXT_PUBLIC_BLOCKCHAIN_RPC_URL,
+    NEXT_PUBLIC_BLOCKCHAIN_CHAIN_ID: process.env.NEXT_PUBLIC_BLOCKCHAIN_CHAIN_ID,
   }
 
   const result = envSchema.safeParse(raw)

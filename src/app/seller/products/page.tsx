@@ -6,6 +6,7 @@ import { GradientText } from "@/components/brand/gradient-text"
 import { requireUser } from "@/lib/auth/session"
 import { getSellerByUserId } from "@/lib/data/sellers"
 import { getSellerProducts } from "@/lib/data/products"
+import { getBlockchainRefs } from "@/lib/data/blockchain"
 import { ProductsClient } from "./products-client"
 
 export const metadata: Metadata = { title: "My Listings" }
@@ -32,5 +33,10 @@ export default async function SellerProductsPage() {
   }
 
   const products = await getSellerProducts(seller.id)
-  return <ProductsClient initialProducts={products} />
+
+  const refs = await getBlockchainRefs(products.map((p) => p.id))
+  const tokenIds: Record<string, string | null> = {}
+  for (const p of products) tokenIds[p.id] = refs.get(p.id)?.tokenId ?? null
+
+  return <ProductsClient initialProducts={products} tokenIds={tokenIds} />
 }
