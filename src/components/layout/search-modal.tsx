@@ -2,12 +2,9 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, X, ArrowRight, Clock, TrendingUp, Loader2 } from "lucide-react"
+import { Search, X, ArrowRight, TrendingUp, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { formatPrice, cn } from "@/lib/utils"
-
-const TRENDING = ["Patek Philippe", "KAWS", "Hermès Birkin", "Richard Mille", "Banksy"]
-const RECENT = ["Rolex Daytona", "Jordan Fleer 1986"]
 
 type SearchProduct = {
   id: string
@@ -30,6 +27,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [results, setResults] = useState<SearchProduct[]>([])
   const [catResults, setCatResults] = useState<SearchCategory[]>([])
   const [categories, setCategories] = useState<BrowseCategory[]>([])
+  const [trending, setTrending] = useState<SearchProduct[]>([])
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -41,6 +39,16 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
       .then((d) => setCategories(d.categories ?? []))
       .catch(() => {})
   }, [isOpen, categories.length])
+
+  // Load trending products once the modal opens. /api/search returns trending
+  // products when called with no query — see the empty-q branch there.
+  useEffect(() => {
+    if (!isOpen || trending.length > 0) return
+    fetch("/api/search")
+      .then((r) => r.json())
+      .then((d) => setTrending(d.products ?? []))
+      .catch(() => {})
+  }, [isOpen, trending.length])
 
   // Debounced product/category search.
   useEffect(() => {
@@ -146,33 +154,13 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                         Trending
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {TRENDING.map((t) => (
+                        {trending.map((p) => (
                           <button
-                            key={t}
-                            onClick={() => setQuery(t)}
+                            key={p.id}
+                            onClick={() => setQuery(p.title)}
                             className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-violet-500/30 hover:bg-violet-500/10 hover:text-violet-300"
                           >
-                            {t}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Recent */}
-                    <div>
-                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        <Clock className="h-3.5 w-3.5" />
-                        Recent
-                      </div>
-                      <div className="space-y-1">
-                        {RECENT.map((r) => (
-                          <button
-                            key={r}
-                            onClick={() => setQuery(r)}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-                          >
-                            <Clock className="h-3.5 w-3.5 shrink-0" />
-                            {r}
+                            {p.title}
                           </button>
                         ))}
                       </div>
