@@ -176,7 +176,7 @@ export function Header() {
                       transition={{ duration: 0.15 }}
                       className="absolute left-0 top-full pt-1"
                     >
-                      <div className="glass-card min-w-[220px] rounded-xl p-1.5">
+                      <div className="min-w-[220px] rounded-xl border bg-popover p-1.5 text-popover-foreground">
                         {link.children.map((child) => (
                           <Link
                             key={child.href}
@@ -302,7 +302,7 @@ export function Header() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -8, scale: 0.97 }}
                         transition={{ duration: 0.15 }}
-                        className="glass-card absolute right-0 top-full z-50 mt-2 min-w-[220px] overflow-hidden rounded-2xl shadow-card"
+                        className="absolute right-0 top-full z-50 mt-2 min-w-[220px] overflow-hidden rounded-2xl border bg-popover text-popover-foreground shadow-card"
                       >
                         {/* User info */}
                         <div className="border-b border-white/5 px-4 py-3">
