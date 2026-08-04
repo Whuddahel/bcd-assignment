@@ -1,5 +1,6 @@
 import { Package, Heart, Star, ChevronRight, CheckCircle } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { GradientText } from "@/components/brand/gradient-text"
@@ -82,7 +83,11 @@ export default async function AccountPage() {
           <div className="space-y-3">
             {recent.map((order) => (
               <div key={order.id} className="flex items-center gap-4 rounded-xl border border-white/5 p-4 transition-colors hover:border-white/10">
-                <div className={`h-12 w-12 shrink-0 rounded-xl bg-gradient-to-br ${order.product?.gradient ?? "from-violet-600/40 to-violet-950/80"}`} />
+                <div className={`relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br ${order.product?.gradient ?? "from-violet-600/40 to-violet-950/80"}`}>
+                  {order.product?.image && (
+                    <Image src={order.product.image} alt={order.product.title} fill sizes="48px" className="object-cover" />
+                  )}
+                </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground">{order.product?.title ?? "Order"}</p>
                   <p className="text-xs text-muted-foreground">Order #{order.shortId} · {formatDate(order.date)}</p>

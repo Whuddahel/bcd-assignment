@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Package, ChevronRight, Truck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -67,7 +68,11 @@ export default async function OrdersPage() {
               <div className="mt-4 space-y-4">
                 {order.items.map((item) => (
                   <div key={item.id} className="flex items-center gap-4">
-                    <div className={`h-16 w-16 shrink-0 rounded-xl bg-gradient-to-br ${item.gradient}`} />
+                    <div className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br ${item.gradient}`}>
+                      {item.image && (
+                        <Image src={item.image} alt={item.title} fill sizes="64px" className="object-cover" />
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-foreground">{item.title}</p>
                       <p className="text-xs text-muted-foreground">

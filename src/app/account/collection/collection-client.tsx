@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { motion } from "framer-motion"
 import { Shield, ExternalLink, Clock, Package } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -16,6 +17,7 @@ export type CollectionEntry = {
   title: string
   slug?: string
   gradient: string
+  image?: string
   purchasedDate: string
   purchasePrice: number
   currentValue: number
@@ -115,7 +117,11 @@ export function CollectionClient({ items, userId }: { items: CollectionEntry[]; 
               >
                 <div className="glass-card overflow-hidden rounded-2xl">
                   <div className="flex flex-wrap items-center gap-4 p-5">
-                    <div className={cn("h-16 w-16 shrink-0 rounded-xl bg-gradient-to-br", item.gradient)} />
+                    <div className={cn("relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br", item.gradient)}>
+                      {item.image && (
+                        <Image src={item.image} alt={item.title} fill sizes="64px" className="object-cover" />
+                      )}
+                    </div>
 
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">

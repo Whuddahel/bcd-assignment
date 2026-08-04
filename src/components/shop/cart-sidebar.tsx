@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Minus, Plus, ShoppingCart, ArrowRight, Trash2, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -97,10 +98,20 @@ export function CartSidebar() {
                         {/* Thumbnail */}
                         <div
                           className={cn(
-                            "h-20 w-20 shrink-0 rounded-xl bg-gradient-to-br",
+                            "relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br",
                             item.product.gradient,
                           )}
-                        />
+                        >
+                          {item.product.images[0] && (
+                            <Image
+                              src={item.product.images[0]}
+                              alt={item.product.title}
+                              fill
+                              sizes="80px"
+                              className="object-cover"
+                            />
+                          )}
+                        </div>
 
                         {/* Info */}
                         <div className="flex min-w-0 flex-1 flex-col">

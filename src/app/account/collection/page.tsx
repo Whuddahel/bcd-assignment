@@ -32,6 +32,7 @@ export default async function CollectionPage() {
       title: it.title,
       slug: it.slug,
       gradient: it.gradient,
+      image: it.image,
       purchasedDate: o.date,
       purchasePrice: it.price,
       currentValue: Math.round(it.price * upliftFactor(it.productId)),

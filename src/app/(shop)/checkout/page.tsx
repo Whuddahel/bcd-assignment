@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 import {
@@ -85,7 +86,17 @@ function OrderSummary() {
       <div className="space-y-3">
         {items.map((item) => (
           <div key={item.product.id} className="flex items-center gap-3">
-            <div className={cn("h-12 w-12 shrink-0 rounded-xl bg-gradient-to-br", item.product.gradient)} />
+            <div className={cn("relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br", item.product.gradient)}>
+              {item.product.images[0] && (
+                <Image
+                  src={item.product.images[0]}
+                  alt={item.product.title}
+                  fill
+                  sizes="48px"
+                  className="object-cover"
+                />
+              )}
+            </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-medium text-foreground">{item.product.title}</p>
               <p className="text-[10px] text-muted-foreground">Qty {item.qty}</p>
