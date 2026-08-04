@@ -2,22 +2,19 @@ import { CheckCircle, Clock, CreditCard, ShieldAlert } from "lucide-react"
 import { GradientText } from "@/components/brand/gradient-text"
 import { ConnectPayoutsButton } from "@/components/seller/connect-payouts-button"
 import { useLiveData, appConfig } from "@/lib/config"
-import { getSessionUser } from "@/lib/auth/session"
+import { requireUser } from "@/lib/auth/session"
 import { createSupabaseServerAdminClient } from "@/lib/supabase/server"
 import { getConnectStatus } from "@/lib/stripe/connect"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = { title: "Payouts" }
 
-async function loadPayoutState() {
-  const user = await getSessionUser()
-  if (!user) return null
-
+async function loadPayoutState(userId: string) {
   const admin = await createSupabaseServerAdminClient()
   const { data: seller } = await admin
     .from("seller_profiles")
     .select("id, business_name, stripe_account_id, stripe_onboarding_complete")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .maybeSingle()
 
   if (!seller) return { seller: null, status: null }
@@ -38,7 +35,8 @@ async function loadPayoutState() {
 }
 
 export default async function SellerPayoutsPage() {
-  const state = useLiveData ? await loadPayoutState() : null
+  const user = await requireUser(["seller", "admin"])
+  const state = useLiveData ? await loadPayoutState(user.id) : null
 
   return (
     <div>

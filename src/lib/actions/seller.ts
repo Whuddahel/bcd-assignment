@@ -61,3 +61,36 @@ export async function applyAsSeller(input: SellerApplyInput): Promise<ActionResu
   revalidatePath("/", "layout")
   return { ok: true, message: "Application submitted — welcome to Aureon." }
 }
+
+/** Update the current user's own seller profile. They must already have one. */
+export async function updateSellerProfile(input: SellerApplyInput): Promise<ActionResult> {
+  const parsed = applySchema.safeParse(input)
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {}
+    for (const i of parsed.error.issues) fieldErrors[String(i.path[0] ?? "form")] ??= i.message
+    return { ok: false, error: "Check the form", fieldErrors }
+  }
+
+  const user = await getSessionUser()
+  if (!user || user.isMock) return { ok: false, error: "Please sign in." }
+
+  const supabase = await createSupabaseServerClient()
+  const d = parsed.data
+
+  const { error, count } = await supabase
+    .from("seller_profiles")
+    .update({
+      business_name: d.businessName,
+      description: d.description,
+      website_url: d.websiteUrl || null,
+      instagram_url: d.instagramUrl || null,
+    }, { count: "exact" })
+    .eq("user_id", user.id)
+
+  if (error) return { ok: false, error: error.message }
+  if (!count) return { ok: false, error: "No seller profile found for your account." }
+
+  revalidatePath("/seller/apply")
+  revalidatePath("/sellers", "layout")
+  return { ok: true, message: "Business profile updated." }
+}
