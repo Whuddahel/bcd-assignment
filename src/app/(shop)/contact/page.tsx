@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Mail, MessageSquare, Clock, CheckCircle, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { GradientText } from "@/components/brand/gradient-text"
 import { submitContactMessage } from "@/lib/actions/contact"
 import { toast } from "sonner"
+import { useUser } from "@/hooks/use-user"
 
 const SUBJECTS = [
   "General Inquiry",
@@ -53,6 +54,12 @@ export default function ContactPage() {
   const [form,    setForm]    = useState({
     name: "", email: "", subject: SUBJECTS[0], message: "",
   })
+  const { user, isLoading } = useUser()
+  const isSignedIn = Boolean(user)
+  useEffect(() => {
+    if (!user) return
+    setForm((prev) => ({ ...prev, name: user.fullName ?? prev.name, email: user.email }))
+  }, [user])
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
@@ -127,6 +134,7 @@ export default function ContactPage() {
                   <div className="space-y-1.5">
                     <Label htmlFor="name">Full name *</Label>
                     <Input
+                      disabled={isSignedIn}
                       id="name"
                       name="name"
                       value={form.name}
@@ -139,6 +147,7 @@ export default function ContactPage() {
                   <div className="space-y-1.5">
                     <Label htmlFor="email">Email address *</Label>
                     <Input
+                      disabled={isSignedIn}
                       id="email"
                       name="email"
                       type="email"
@@ -184,7 +193,7 @@ export default function ContactPage() {
 
                 <Button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || isLoading}
                   className="gradient-brand w-full border-0 text-white hover:opacity-90 disabled:opacity-50"
                 >
                   {loading ? "Sending…" : "Send message"}
