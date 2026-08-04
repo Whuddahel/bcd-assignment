@@ -204,45 +204,18 @@ function AddressStep({
 }
 
 // ── Real Stripe payment flow (mounted once a PaymentIntent client_secret exists) ──
+//
+// Payment + review share one component so the PaymentElement never unmounts
+// between them — stripe.confirmPayment() requires a currently-mounted Payment
+// Element, and swapping to a separate review component would tear it down.
 
-function RealPaymentStep({ onBack, onContinue }: { onBack: () => void; onContinue: () => void }) {
-  return (
-    <motion.div
-      key="payment"
-      initial={{ opacity: 0, x: 16 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -16 }}
-      transition={{ duration: 0.3, ease: EASE }}
-    >
-      <div className="glass-card rounded-2xl p-6">
-        <h2 className="mb-5 flex items-center gap-2 font-semibold text-foreground">
-          <CreditCard className="h-4 w-4 text-violet-400" />
-          Payment details
-        </h2>
-        <PaymentElement options={{ layout: "tabs" }} />
-      </div>
-
-      <div className="mt-6 flex justify-between">
-        <Button variant="outline" className="border-white/10 hover:bg-white/5" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
-        </Button>
-        <Button
-          className="gradient-brand btn-glow gap-2 border-0 text-white hover:opacity-90"
-          onClick={onContinue}
-        >
-          Review order <ArrowRight className="h-4 w-4" />
-        </Button>
-      </div>
-    </motion.div>
-  )
-}
-
-function RealReviewStep({
-  address, total, onBack,
+function RealPaymentAndReview({
+  step, setStep, address, total,
 }: {
+  step: Extract<Step, "payment" | "review">
+  setStep: (s: Step) => void
   address: Address
   total: number
-  onBack: () => void
 }) {
   const stripe = useStripe()
   const elements = useElements()
@@ -274,50 +247,60 @@ function RealReviewStep({
 
   return (
     <motion.div
-      key="review"
+      key="real-payment"
       initial={{ opacity: 0, x: 16 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -16 }}
       transition={{ duration: 0.3, ease: EASE }}
     >
-      <div className="space-y-4">
-        <div className="glass-card rounded-2xl p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <MapPin className="h-4 w-4 text-violet-400" /> Shipping to
-            </h3>
-            <button onClick={onBack} className="text-xs text-violet-400 hover:text-violet-300">
-              Edit
-            </button>
-          </div>
-          <p className="text-sm text-foreground">{address.name}</p>
-          <p className="text-xs text-muted-foreground">{address.line1}, {address.city} {address.postal}</p>
-          <p className="text-xs text-muted-foreground">{address.email}</p>
-        </div>
-
-        <div className="glass-card rounded-2xl p-5">
-          <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
-            <CreditCard className="h-4 w-4 text-violet-400" /> Payment
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            Payment method securely captured by Stripe — no card details touch our servers.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { icon: Shield,  label: "Authenticated",   sub: "Every item verified"   },
-            { icon: Lock,    label: "SSL encrypted",    sub: "256-bit security"      },
-            { icon: Package, label: "Insured shipping", sub: "Full coverage"         },
-          ].map(({ icon: Icon, label, sub }) => (
-            <div key={label} className="glass-card rounded-xl p-3 text-center">
-              <Icon className="mx-auto h-4 w-4 text-violet-400" />
-              <p className="mt-1.5 text-xs font-medium text-foreground">{label}</p>
-              <p className="text-[10px] text-muted-foreground">{sub}</p>
-            </div>
-          ))}
-        </div>
+      <div className={cn("glass-card rounded-2xl p-6", step === "review" && "hidden")}>
+        <h2 className="mb-5 flex items-center gap-2 font-semibold text-foreground">
+          <CreditCard className="h-4 w-4 text-violet-400" />
+          Payment details
+        </h2>
+        <PaymentElement options={{ layout: "tabs" }} />
       </div>
+
+      {step === "review" && (
+        <div className="space-y-4">
+          <div className="glass-card rounded-2xl p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <MapPin className="h-4 w-4 text-violet-400" /> Shipping to
+              </h3>
+              <button onClick={() => setStep("address")} className="text-xs text-violet-400 hover:text-violet-300">
+                Edit
+              </button>
+            </div>
+            <p className="text-sm text-foreground">{address.name}</p>
+            <p className="text-xs text-muted-foreground">{address.line1}, {address.city} {address.postal}</p>
+            <p className="text-xs text-muted-foreground">{address.email}</p>
+          </div>
+
+          <div className="glass-card rounded-2xl p-5">
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
+              <CreditCard className="h-4 w-4 text-violet-400" /> Payment
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Payment method securely captured by Stripe — no card details touch our servers.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { icon: Shield,  label: "Authenticated",   sub: "Every item verified"   },
+              { icon: Lock,    label: "SSL encrypted",    sub: "256-bit security"      },
+              { icon: Package, label: "Insured shipping", sub: "Full coverage"         },
+            ].map(({ icon: Icon, label, sub }) => (
+              <div key={label} className="glass-card rounded-xl p-3 text-center">
+                <Icon className="mx-auto h-4 w-4 text-violet-400" />
+                <p className="mt-1.5 text-xs font-medium text-foreground">{label}</p>
+                <p className="text-[10px] text-muted-foreground">{sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs text-red-400">
@@ -327,31 +310,45 @@ function RealReviewStep({
       )}
 
       <div className="mt-6 flex justify-between">
-        <Button variant="outline" className="border-white/10 hover:bg-white/5" onClick={onBack} disabled={processing}>
+        <Button
+          variant="outline"
+          className="border-white/10 hover:bg-white/5"
+          onClick={() => setStep(step === "review" ? "payment" : "address")}
+          disabled={processing}
+        >
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
-        <Button
-          className="gradient-brand btn-glow gap-2 border-0 text-white hover:opacity-90"
-          size="lg"
-          onClick={placeOrder}
-          disabled={processing || !stripe || !elements}
-        >
-          {processing ? (
-            <>
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white"
-              />
-              Processing…
-            </>
-          ) : (
-            <>
-              <Lock className="h-4 w-4" />
-              Place order · {formatPrice(total)}
-            </>
-          )}
-        </Button>
+        {step === "payment" ? (
+          <Button
+            className="gradient-brand btn-glow gap-2 border-0 text-white hover:opacity-90"
+            onClick={() => setStep("review")}
+          >
+            Review order <ArrowRight className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button
+            className="gradient-brand btn-glow gap-2 border-0 text-white hover:opacity-90"
+            size="lg"
+            onClick={placeOrder}
+            disabled={processing || !stripe || !elements}
+          >
+            {processing ? (
+              <>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white"
+                />
+                Processing…
+              </>
+            ) : (
+              <>
+                <Lock className="h-4 w-4" />
+                Place order · {formatPrice(total)}
+              </>
+            )}
+          </Button>
+        )}
       </div>
     </motion.div>
   )
@@ -671,12 +668,12 @@ export default function CheckoutPage() {
                     },
                   }}
                 >
-                  {step === "payment" && (
-                    <RealPaymentStep onBack={() => setStep("address")} onContinue={() => setStep("review")} />
-                  )}
-                  {step === "review" && (
-                    <RealReviewStep address={address} total={total} onBack={() => setStep("payment")} />
-                  )}
+                  <RealPaymentAndReview
+                    step={step as Extract<Step, "payment" | "review">}
+                    setStep={setStep}
+                    address={address}
+                    total={total}
+                  />
                 </Elements>
               )}
 
