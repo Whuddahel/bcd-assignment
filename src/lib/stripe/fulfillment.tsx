@@ -4,6 +4,7 @@ import * as React from "react"
 import { getStripe } from "@/lib/stripe/server"
 import { appConfig } from "@/lib/config"
 import { createSupabaseServerAdminClient } from "@/lib/supabase/server"
+import { getProductsForCheckout } from "@/lib/data/products"
 import { sendEmail } from "@/lib/email/client"
 import OrderConfirmationEmail from "@/emails/order-confirmation"
 import { env } from "@/lib/env"
@@ -23,14 +24,40 @@ export type FulfilLineItem = {
 
 export type FulfilledOrder = { id: string; total_amount: number }
 
-function parseLineItems(raw: string | undefined): FulfilLineItem[] | null {
+type MetadataLineItem = { productId: string; qty: number }
+
+function parseMetadataLineItems(raw: string | undefined): MetadataLineItem[] | null {
   if (!raw) return null
   try {
     const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as FulfilLineItem[]) : null
+    return Array.isArray(parsed) ? (parsed as MetadataLineItem[]) : null
   } catch {
     return null
   }
+}
+
+/**
+ * Metadata only carries {productId, qty} (Stripe caps each value at 500
+ * characters — title/price/sellerId wouldn't fit for larger carts). Re-fetch
+ * the rest fresh from Supabase, same as the checkout route does when the
+ * PaymentIntent is first created.
+ */
+async function resolveLineItems(metaItems: MetadataLineItem[]): Promise<FulfilLineItem[] | null> {
+  const products = await getProductsForCheckout(metaItems.map((i) => i.productId))
+
+  const lineItems: FulfilLineItem[] = []
+  for (const { productId, qty } of metaItems) {
+    const product = products.find((p) => p.id === productId)
+    if (!product) return null
+    lineItems.push({
+      productId,
+      sellerId: product.sellerId,
+      title: product.title,
+      price: product.price,
+      qty,
+    })
+  }
+  return lineItems
 }
 
 /**
@@ -42,12 +69,18 @@ export async function fulfilPaymentIntent(
   paymentIntent: Stripe.PaymentIntent,
 ): Promise<FulfilledOrder | null> {
   const buyerId = paymentIntent.metadata.buyerId
-  const lineItems = parseLineItems(paymentIntent.metadata.lineItems)
+  const metaItems = parseMetadataLineItems(paymentIntent.metadata.lineItems)
   const subtotal = Number(paymentIntent.metadata.subtotal)
   const platformFee = Number(paymentIntent.metadata.platformFee)
 
-  if (!buyerId || !lineItems || lineItems.length === 0) {
+  if (!buyerId || !metaItems || metaItems.length === 0) {
     console.error("fulfilment: payment intent missing order metadata", paymentIntent.id)
+    return null
+  }
+
+  const lineItems = await resolveLineItems(metaItems)
+  if (!lineItems || lineItems.length === 0) {
+    console.error("fulfilment: could not resolve line items from Supabase", paymentIntent.id)
     return null
   }
 

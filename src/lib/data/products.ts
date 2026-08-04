@@ -1,5 +1,5 @@
 import "server-only"
-import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { createSupabaseServerClient, createSupabaseServerAdminClient } from "@/lib/supabase/server"
 import { mapProduct, type ProductVM, type ProductRow } from "./types"
 
 const PRODUCT_SELECT =
@@ -120,6 +120,39 @@ export async function getSellerProducts(sellerId: string): Promise<ProductVM[]> 
     return []
   }
   return (data as unknown as ProductRow[]).map(mapProduct)
+}
+
+export type CheckoutProduct = {
+  id: string
+  title: string
+  price: number // dollars
+  sellerId: string
+  status: string
+}
+
+/**
+ * Minimal, trusted product data for checkout/fulfilment — looked up fresh from
+ * Supabase by id rather than carried through Stripe metadata (which caps each
+ * value at 500 characters and shouldn't be trusted over the DB anyway). Uses
+ * the admin client since this runs from the checkout route and the Stripe
+ * webhook, neither of which has a buyer's session to read as.
+ */
+export async function getProductsForCheckout(ids: string[]): Promise<CheckoutProduct[]> {
+  if (ids.length === 0) return []
+  const supabase = await createSupabaseServerAdminClient()
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, title, price, seller_id, status")
+    .in("id", ids)
+
+  if (error || !data) return []
+  return data.map((p) => ({
+    id: p.id,
+    title: p.title,
+    price: p.price / 100,
+    sellerId: p.seller_id,
+    status: p.status,
+  }))
 }
 
 /** Best-effort view-count bump. Never throws; failure is non-fatal for a page. */

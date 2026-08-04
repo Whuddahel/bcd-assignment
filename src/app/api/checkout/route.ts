@@ -2,7 +2,8 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { getStripe } from "@/lib/stripe/server"
 import { hasStripe, appConfig } from "@/lib/config"
-import { createSupabaseServerAdminClient, createSupabaseServerClient } from "@/lib/supabase/server"
+import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { getProductsForCheckout } from "@/lib/data/products"
 
 const requestSchema = z.object({
   items: z
@@ -28,15 +29,7 @@ type Resolved = { lineItems: LineItem[]; subtotal: number }
 async function resolveFromSupabase(
   items: { productId: string; qty: number }[],
 ): Promise<Resolved | null> {
-  const supabase = await createSupabaseServerAdminClient()
-  const ids = items.map((i) => i.productId)
-
-  const { data: products, error } = await supabase
-    .from("products")
-    .select("id, title, price, seller_id, status")
-    .in("id", ids)
-
-  if (error || !products) return null
+  const products = await getProductsForCheckout(items.map((i) => i.productId))
 
   const lineItems: LineItem[] = []
   for (const { productId, qty } of items) {
@@ -44,11 +37,9 @@ async function resolveFromSupabase(
     if (!product || product.status !== "active") return null
     lineItems.push({
       productId,
-      sellerId: product.seller_id,
+      sellerId: product.sellerId,
       title: product.title,
-      // products.price is stored in cents in Supabase; everywhere else in the
-      // app (mock data, formatPrice, cart totals) works in whole dollars.
-      price: product.price / 100,
+      price: product.price,
       qty,
     })
   }
@@ -103,8 +94,11 @@ export async function POST(request: Request) {
     automatic_payment_methods: { enabled: true },
     metadata: {
       // Consumed by the webhook to create the order + per-seller transfers.
+      // Only ids + qty — Stripe caps each metadata value at 500 characters, so
+      // title/price/sellerId are re-resolved from Supabase during fulfilment
+      // instead of being carried through here.
       buyerId,
-      lineItems: JSON.stringify(lineItems),
+      lineItems: JSON.stringify(lineItems.map((i) => ({ productId: i.productId, qty: i.qty }))),
       subtotal: String(subtotal),
       platformFee: String(platformFee),
     },
