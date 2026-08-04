@@ -26,8 +26,8 @@ export default async function HomePage() {
       <main>
         <HeroSection />
         <BrandsMarquee />
-        <FeaturedCollections />
-        <TrendingDrops drops={trending} />
+        {/* <FeaturedCollections /> */}
+        {/* <TrendingDrops drops={trending} /> */}
         <CategoryShowcase />
         <HowItWorks />
         <Testimonials />

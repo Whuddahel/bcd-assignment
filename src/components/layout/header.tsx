@@ -218,7 +218,7 @@ export function Header() {
               <Search className="h-4.5 w-4.5" />
             </Button>
 
-            {/* Theme toggle */}
+            {/* Theme toggle
             {mounted && (
               <Button
                 variant="ghost"
@@ -229,7 +229,7 @@ export function Header() {
               >
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
-            )}
+            )} */}
 
             {/* Cart */}
             <Button
