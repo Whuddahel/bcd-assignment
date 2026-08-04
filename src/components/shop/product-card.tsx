@@ -10,6 +10,7 @@ import { cn, formatPrice } from "@/lib/utils"
 import type { ProductVM } from "@/lib/data/types"
 import { useCartStore } from "@/stores/cart-store"
 import { toast } from "sonner"
+import { toggleWishlist } from "@/lib/actions/wishlist"
 
 interface ProductCardProps {
   product: ProductVM
@@ -78,11 +79,23 @@ export function ProductCard({ product, index = 0, wishlistDefault = false }: Pro
     toast.success("Added to cart", { description: product.title })
   }
 
-  function handleWishlist(e: React.MouseEvent) {
+  async function handleWishlist(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
-    setWishlisted((w) => !w)
-    toast.success(wishlisted ? "Removed from wishlist" : "Added to wishlist", {
+
+    const next = !wishlisted
+    setWishlisted(next) // optimistic
+
+    const res = await toggleWishlist(product.id)
+
+    if (!res.ok) {
+      setWishlisted(!next) // revert
+      toast.error(res.error ?? "Could not update wishlist")
+      return
+    }
+
+    setWishlisted(res.wishlisted)
+    toast.success(res.wishlisted ? "Added to wishlist" : "Removed from wishlist", {
       description: product.title,
     })
   }

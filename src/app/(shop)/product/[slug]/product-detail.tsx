@@ -40,6 +40,7 @@ interface ProductDetailProps {
   reviews: ReviewVM[]
   avgRating: number | null
   wishlistedDefault: boolean
+  relatedWishlistedIds?: string[]
   canReview: boolean
   blockchainTokenId: string | null
 }
@@ -50,6 +51,7 @@ export function ProductDetail({
   reviews,
   avgRating,
   wishlistedDefault,
+  relatedWishlistedIds,
   canReview,
   blockchainTokenId,
 }: ProductDetailProps) {
@@ -442,7 +444,9 @@ export function ProductDetail({
               </Link>
             </div>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {related.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+              {related.map((p, i) => (
+                <ProductCard key={p.id} product={p} index={i} wishlistDefault={relatedWishlistedIds?.includes(p.id)} />
+              ))}
             </div>
           </div>
         )}
