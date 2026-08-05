@@ -88,12 +88,13 @@ export function SellerApplyClient({ existing }: { existing: SellerVM | null }) {
           <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl gradient-brand">
             <CheckCircle className="h-10 w-10 text-white" />
           </div>
-          <h1 className="font-display text-2xl font-bold">Application submitted!</h1>
+          <h1 className="font-display text-2xl font-bold">Application Submitted!</h1>
           <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-            Our team will review your application within{" "}
-            <strong className="text-foreground">48 hours</strong>. You&apos;ll receive an email
-            with next steps — including Stripe Connect onboarding.
+            Your application has been submitted! Further assessments from our team will occur within{" "}
+            <strong className="text-foreground">48 hours</strong> to ensure it doesn&apos;t violate our policies.
           </p>
+          {/* You&apos;ll receive an email
+            with next steps — including Stripe Connect onboarding. */}
           <div className="mt-6 space-y-2 text-left">
             {["ID verification review", "Stripe Connect setup email", "Seller account activation", "First listing goes live"].map((step, i) => (
               <div key={step} className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -231,7 +232,7 @@ export function SellerApplyClient({ existing }: { existing: SellerVM | null }) {
           </div>
 
           {/* KYC document upload — onboarding only, already on file for existing sellers */}
-          {!isEditing && (
+          {/* {!isEditing && (
             <div className="glass-card rounded-2xl p-6">
               <h2 className="mb-2 text-sm font-semibold text-foreground">Identity verification</h2>
               <p className="mb-4 text-xs text-muted-foreground">
@@ -249,7 +250,7 @@ export function SellerApplyClient({ existing }: { existing: SellerVM | null }) {
                 </div>
               </button>
             </div>
-          )}
+          )} */}
 
           {/* Stripe Connect notice — onboarding only */}
           {!isEditing && (
