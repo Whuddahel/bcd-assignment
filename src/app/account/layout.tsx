@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
 import {
-  LayoutDashboard, Package, Heart, User, ChevronRight, LogOut, Star,
+  LayoutDashboard, Package, Heart, User, ChevronRight, LogOut, Star, HeadphonesIcon,
 } from "lucide-react"
 import { Header } from "@/components/layout/header"
 import { signOut } from "@/lib/auth/actions"
@@ -16,6 +16,7 @@ const NAV = [
   { href: "/account/orders",       label: "Orders",      icon: Package         },
   { href: "/account/wishlist",     label: "Wishlist",    icon: Heart           },
   { href: "/account/collection",   label: "Collection",  icon: Star            },
+  { href: "/account/support",      label: "Support",     icon: HeadphonesIcon  },
   { href: "/account/profile",      label: "Profile",     icon: User            },
 ]
 
@@ -34,22 +35,25 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
               My Account
             </p>
             <nav className="flex flex-1 flex-col gap-1">
-              {NAV.map(({ href, label, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
-                    pathname === href
-                      ? "bg-violet-500/15 text-violet-300"
-                      : "text-muted-foreground hover:bg-white/5 hover:text-foreground",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                  {pathname === href && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
-                </Link>
-              ))}
+              {NAV.map(({ href, label, icon: Icon }) => {
+                const active = href === "/account" ? pathname === href : pathname.startsWith(href)
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                      active
+                        ? "bg-violet-500/15 text-violet-300"
+                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                    {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
+                  </Link>
+                )
+              })}
             </nav>
             <button
               onClick={() => startSignOut(async () => { await signOut() })}
