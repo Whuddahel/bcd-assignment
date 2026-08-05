@@ -31,9 +31,11 @@ export default async function AccountPage() {
 
   const firstName = user.fullName?.split(" ")[0] ?? "there"
   const recent = orders.slice(0, 4)
-  const collectionCount = orders.filter((o) =>
-    ["confirmed", "shipped", "delivered"].includes(o.status),
-  ).length
+  // Item count, not order count — matches what /account/collection actually
+  // lists (an order can contain more than one item).
+  const collectionCount = orders
+    .filter((o) => ["confirmed", "shipped", "delivered"].includes(o.status))
+    .reduce((n, o) => n + o.items.length, 0)
 
   return (
     <div>
@@ -46,12 +48,11 @@ export default async function AccountPage() {
       </div>
 
       {/* Stats row */}
-      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
         {[
           { label: "Orders",     value: orders.length,      icon: Package,     color: "text-violet-400" },
           { label: "Wishlisted", value: wishlistIds.size,   icon: Heart,       color: "text-pink-400"   },
           { label: "Collection", value: collectionCount,    icon: Star,        color: "text-amber-400"  },
-          { label: "Verified",   value: "✓",                icon: CheckCircle, color: "text-emerald-400" },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="glass-card rounded-2xl p-5">
             <Icon className={`h-5 w-5 ${color}`} />
