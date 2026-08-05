@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
@@ -19,6 +19,7 @@ import { useCartStore } from "@/stores/cart-store"
 import { formatPrice, cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { getStripeBrowserClient } from "@/lib/stripe/client"
+import { useUser } from "@/hooks/use-user"
 
 // Direct process.env access so Next.js can statically inline this at build time —
 // values pulled through the shared env/config helpers are not reliably available
@@ -561,6 +562,7 @@ function MockPaymentAndReview({
 
 export default function CheckoutPage() {
   const router = useRouter()
+  const { user } = useUser()
   const { items, clearCart, totalPrice } = useCartStore()
   const [step, setStep] = useState<Step>("address")
   const [clientSecret, setClientSecret] = useState<string | null>(null)
@@ -569,9 +571,20 @@ export default function CheckoutPage() {
   const [mockProcessing, setMockProcessing] = useState(false)
 
   const [address, setAddress] = useState<Address>({
-    name: "Emma Wilson", email: "buyer1@aureon.io", phone: "+44 20 7946 0958",
-    line1: "14 Kensington Gardens", city: "London", state: "", postal: "W8 4PT", country: "GB",
+    name: "", email: "", phone: "",
+    line1: "", city: "", state: "", postal: "", country: "",
   })
+
+  // Prefill from the signed-in user once their session loads — still editable.
+  useEffect(() => {
+    if (!user) return
+    setAddress((a) => ({
+      ...a,
+      name: a.name || user.fullName || "",
+      email: a.email || user.email || "",
+      phone: a.phone || user.phone || "",
+    }))
+  }, [user])
 
   const subtotal = totalPrice()
   const fee = Math.round(subtotal * 0.1)
@@ -595,6 +608,7 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: items.map((i) => ({ productId: i.product.id, qty: i.qty })),
+          address,
         }),
       })
       const data = await res.json()

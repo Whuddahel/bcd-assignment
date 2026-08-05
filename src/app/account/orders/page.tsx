@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Package, ChevronRight, Truck } from "lucide-react"
+import { Package, ChevronRight, Truck, MapPin } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { GradientText } from "@/components/brand/gradient-text"
@@ -94,6 +94,21 @@ export default async function OrdersPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Shipping address */}
+              {order.shippingAddress && (
+                <div className="mt-4 flex items-start gap-2 border-t border-white/5 pt-4 text-xs text-muted-foreground">
+                  <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-400" />
+                  <p>
+                    Shipping to{" "}
+                    <span className="text-foreground">
+                      {order.shippingAddress.name}, {order.shippingAddress.line1},{" "}
+                      {order.shippingAddress.city} {order.shippingAddress.postal_code},{" "}
+                      {order.shippingAddress.country}
+                    </span>
+                  </p>
+                </div>
+              )}
             </div>
           ))}
         </div>

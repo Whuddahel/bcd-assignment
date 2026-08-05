@@ -72,6 +72,9 @@ export async function fulfilPaymentIntent(
   const metaItems = parseMetadataLineItems(paymentIntent.metadata.lineItems)
   const subtotal = Number(paymentIntent.metadata.subtotal)
   const platformFee = Number(paymentIntent.metadata.platformFee)
+  const shippingAddress = paymentIntent.metadata.shippingAddress
+    ? JSON.parse(paymentIntent.metadata.shippingAddress)
+    : null
 
   if (!buyerId || !metaItems || metaItems.length === 0) {
     console.error("fulfilment: payment intent missing order metadata", paymentIntent.id)
@@ -104,6 +107,7 @@ export async function fulfilPaymentIntent(
       platform_fee: Math.round(platformFee * 100),
       stripe_payment_intent_id: paymentIntent.id,
       stripe_payment_status: paymentIntent.status,
+      shipping_address: shippingAddress,
     })
     .select("id, total_amount")
     .single()

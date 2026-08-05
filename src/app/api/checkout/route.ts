@@ -14,6 +14,13 @@ const requestSchema = z.object({
       }),
     )
     .min(1),
+  address: z.object({
+    name: z.string().min(1),
+    line1: z.string().min(1),
+    city: z.string().min(1),
+    postal: z.string().min(1),
+    country: z.string().min(1),
+  }),
 })
 
 type LineItem = {
@@ -87,6 +94,11 @@ export async function POST(request: Request) {
   const platformFee = Math.round(subtotal * (appConfig.stripe.platformFeePercent / 100))
   const total = subtotal + platformFee
 
+  // Stored with Stripe's own shipping-address field names (name/line1/city/
+  // postal_code/country), matching how Stripe itself shapes an address.
+  const { name, line1, city, postal, country } = parsed.data.address
+  const shippingAddress = { name, line1, city, postal_code: postal, country }
+
   const stripe = getStripe()
   const paymentIntent = await stripe.paymentIntents.create({
     amount: Math.round(total * 100),
@@ -101,6 +113,7 @@ export async function POST(request: Request) {
       lineItems: JSON.stringify(lineItems.map((i) => ({ productId: i.productId, qty: i.qty }))),
       subtotal: String(subtotal),
       platformFee: String(platformFee),
+      shippingAddress: JSON.stringify(shippingAddress),
     },
   })
 

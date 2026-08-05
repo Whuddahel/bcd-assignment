@@ -8,6 +8,7 @@ export type SessionUser = {
   id: string
   email: string
   fullName: string | null
+  phone: string | null
   avatarUrl: string | null
   role: UserRole
   /** True when this session came from the dev fallback, not Supabase. */
@@ -21,6 +22,7 @@ export const MOCK_SESSION_USER: SessionUser = {
   id: "00000000-0000-0000-0000-000000000031",
   email: "buyer1@aureon.io",
   fullName: "Emma Wilson",
+  phone: null,
   avatarUrl: null,
   role: "customer",
   isMock: true,

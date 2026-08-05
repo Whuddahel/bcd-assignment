@@ -30,7 +30,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, full_name, avatar_url")
+    .select("role, full_name, phone, avatar_url")
     .eq("id", user.id)
     .single()
 
@@ -38,6 +38,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     id: user.id,
     email: user.email ?? "",
     fullName: profile?.full_name ?? (user.user_metadata?.full_name as string) ?? null,
+    phone: profile?.phone ?? null,
     avatarUrl: profile?.avatar_url ?? (user.user_metadata?.avatar_url as string) ?? null,
     role: profile?.role ?? "customer",
     isMock: false,
