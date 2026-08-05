@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { Plus, Eye, Trash2, TrendingUp, DollarSign, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -143,7 +144,11 @@ export function ProductsClient({
               >
                 {/* Product */}
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`h-12 w-12 shrink-0 rounded-xl bg-gradient-to-br ${p.gradient}`} />
+                  <div className={`relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br ${p.gradient}`}>
+                    {p.images[0] && (
+                      <Image src={p.images[0]} alt={p.title} fill sizes="48px" className="object-cover" />
+                    )}
+                  </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">{p.title}</p>
                     <div className="mt-0.5 flex items-center gap-2">
