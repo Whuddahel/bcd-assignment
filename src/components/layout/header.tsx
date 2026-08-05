@@ -241,7 +241,7 @@ export function Header() {
             >
               <ShoppingCart className="h-4.5 w-4.5" />
               <AnimatePresence>
-                {cartCount > 0 && (
+                {mounted && cartCount > 0 && (
                   <motion.span
                     key="cart-badge"
                     initial={{ scale: 0 }}

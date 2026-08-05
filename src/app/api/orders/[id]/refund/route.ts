@@ -61,16 +61,30 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   try {
     await stripe.refunds.create({ payment_intent: order.stripe_payment_intent_id })
   } catch (err) {
+    const code = (err as { code?: string } | null)?.code
     const message = err instanceof Error ? err.message : "Refund failed at Stripe."
-    return NextResponse.json({ error: message }, { status: 502 })
+    // Stripe already agrees this charge is refunded (e.g. a retry after our own
+    // DB write failed last time) — reconcile Supabase instead of erroring out.
+    const alreadyRefunded = code === "charge_already_refunded" || /already been refunded/i.test(message)
+    if (!alreadyRefunded) {
+      return NextResponse.json({ error: message }, { status: 502 })
+    }
   }
 
   // Update immediately for responsive UI; the charge.refunded webhook is the
   // source of truth and will set the same status if it arrives first/later.
-  await admin
+  const { error: updateError } = await admin
     .from("orders")
     .update({ status: "refunded", stripe_payment_status: "refunded" })
     .eq("id", order.id)
+
+  if (updateError) {
+    console.error("refund: order refunded at Stripe but Supabase update failed", updateError.message)
+    return NextResponse.json(
+      { error: "Refunded at Stripe, but saving the order status failed. Try again to retry just the save." },
+      { status: 500 },
+    )
+  }
 
   return NextResponse.json({ ok: true })
 }
