@@ -349,6 +349,7 @@ export type TicketMessageVM = {
   id: string
   sender: string
   senderId: string
+  senderAvatar?: string
   body: string
   isInternal: boolean
   date: string
@@ -373,7 +374,7 @@ export function mapTicket(
   row: SupportTicket & {
     profiles?: Pick<Profile, "full_name"> | null
     support_messages?: (SupportMessage & {
-      profiles?: Pick<Profile, "full_name"> | null
+      profiles?: Pick<Profile, "full_name" | "avatar_url"> | null
     })[] | null
   },
 ): TicketVM {
@@ -396,6 +397,7 @@ export function mapTicket(
         id: m.id,
         sender: m.profiles?.full_name ?? "Aureon",
         senderId: m.sender_id,
+        senderAvatar: m.profiles?.avatar_url ?? undefined,
         body: m.body,
         isInternal: m.is_internal,
         date: m.created_at,

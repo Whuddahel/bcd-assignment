@@ -165,11 +165,15 @@ export function AdminUsersClient({ users }: { users: AdminUser[] }) {
                   {/* User */}
                   <div className="flex items-center gap-3 min-w-0">
                     <div
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl gradient-brand text-sm font-bold text-white ${
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl gradient-brand text-sm font-bold text-white ${
                         isSuspended ? "grayscale" : ""
                       }`}
                     >
-                      {user.fullName.charAt(0)}
+                      {user.avatarUrl ? (
+                        <img src={user.avatarUrl} alt={user.fullName} className="h-full w-full object-cover" />
+                      ) : (
+                        user.fullName.charAt(0)
+                      )}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">

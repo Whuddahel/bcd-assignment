@@ -24,6 +24,7 @@ export async function getAllProductsAdmin(): Promise<ProductVM[]> {
 export type AdminUser = {
   id: string
   fullName: string
+  avatarUrl?: string
   role: UserRole
   createdAt: string
   isSeller: boolean
@@ -36,7 +37,7 @@ export async function getAllProfiles(): Promise<AdminUser[]> {
   const supabase = await createSupabaseServerClient()
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role, created_at, seller_profiles(business_name, verified)")
+    .select("id, full_name, avatar_url, role, created_at, seller_profiles(business_name, verified)")
     .order("created_at", { ascending: false })
 
   if (error || !data) {
@@ -47,6 +48,7 @@ export async function getAllProfiles(): Promise<AdminUser[]> {
   return (data as unknown as {
     id: string
     full_name: string | null
+    avatar_url: string | null
     role: UserRole
     created_at: string
     seller_profiles: { business_name: string; verified: boolean }[] | { business_name: string; verified: boolean } | null
@@ -55,6 +57,7 @@ export async function getAllProfiles(): Promise<AdminUser[]> {
     return {
       id: p.id,
       fullName: p.full_name ?? "Unnamed user",
+      avatarUrl: p.avatar_url ?? undefined,
       role: p.role,
       createdAt: p.created_at,
       isSeller: Boolean(seller),

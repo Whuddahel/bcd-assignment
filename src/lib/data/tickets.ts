@@ -4,7 +4,7 @@ import { mapTicket, type TicketVM } from "./types"
 
 const TICKET_LIST_SELECT = "*, profiles!support_tickets_user_id_fkey(full_name)"
 const TICKET_FULL_SELECT =
-  "*, profiles!support_tickets_user_id_fkey(full_name), support_messages(*, profiles(full_name))"
+  "*, profiles!support_tickets_user_id_fkey(full_name), support_messages(*, profiles(full_name, avatar_url))"
 
 /** Tickets opened by a specific customer. */
 export async function getTicketsForUser(userId: string): Promise<TicketVM[]> {

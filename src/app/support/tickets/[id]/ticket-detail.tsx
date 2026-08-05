@@ -133,8 +133,12 @@ export function TicketDetail({ ticket }: { ticket: TicketVM }) {
                 transition={{ duration: 0.3, delay: i * 0.05, ease: EASE }}
                 className={`flex gap-3 ${isAgent ? "flex-row-reverse" : ""}`}
               >
-                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white ${isAgent ? "gradient-brand" : "bg-white/10"}`}>
-                  {msg.sender.charAt(0)}
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-xl text-xs font-bold text-white ${isAgent ? "gradient-brand" : "bg-white/10"}`}>
+                  {msg.senderAvatar ? (
+                    <img src={msg.senderAvatar} alt={msg.sender} className="h-full w-full object-cover" />
+                  ) : (
+                    msg.sender.charAt(0)
+                  )}
                 </div>
 
                 <div className={`max-w-[75%] ${isAgent ? "items-end" : ""} flex flex-col gap-1`}>
