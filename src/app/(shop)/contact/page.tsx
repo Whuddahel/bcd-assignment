@@ -48,13 +48,20 @@ const CHANNELS = [
   },
 ]
 
+function blankForm(user: ReturnType<typeof useUser>["user"]) {
+  return {
+    name: user?.fullName ?? "",
+    email: user?.email ?? "",
+    subject: SUBJECTS[0],
+    message: "",
+  }
+}
+
 export default function ContactPage() {
   const [sent,    setSent]    = useState(false)
   const [loading, setLoading] = useState(false)
-  const [form,    setForm]    = useState({
-    name: "", email: "", subject: SUBJECTS[0], message: "",
-  })
   const { user, isLoading } = useUser()
+  const [form,    setForm]    = useState(() => blankForm(user))
   const isSignedIn = Boolean(user)
   useEffect(() => {
     if (!user) return
@@ -121,7 +128,7 @@ export default function ContactPage() {
                 </p>
                 <Button
                   className="gradient-brand mt-6 border-0 text-white hover:opacity-90"
-                  onClick={() => { setSent(false); setForm({ name: "", email: "", subject: SUBJECTS[0], message: "" }) }}
+                  onClick={() => { setSent(false); setForm(blankForm(user)) }}
                 >
                   Send another message <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
