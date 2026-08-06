@@ -10,7 +10,8 @@ const requestSchema = z.object({
     .array(
       z.object({
         productId: z.string().min(1),
-        qty: z.number().int().positive().max(20),
+        // Every listing is a one-of-a-kind item, not stock — never more than 1.
+        qty: z.literal(1),
       }),
     )
     .min(1),

@@ -29,17 +29,14 @@ export const useCartStore = create<CartStore>()(
       items: [],
       isOpen: false,
 
+      // Every listing here is a one-of-a-kind item, not stock — there is never
+      // a legitimate reason to hold more than 1 of the same product. Adding
+      // an item that's already in the cart just surfaces the cart instead of
+      // incrementing a quantity that couldn't actually be fulfilled.
       addItem: (product) =>
         set((s) => {
           const existing = s.items.find((i) => i.product.id === product.id)
-          if (existing) {
-            return {
-              items: s.items.map((i) =>
-                i.product.id === product.id ? { ...i, qty: i.qty + 1 } : i,
-              ),
-              isOpen: true,
-            }
-          }
+          if (existing) return { isOpen: true }
           return { items: [...s.items, { product, qty: 1 }], isOpen: true }
         }),
 

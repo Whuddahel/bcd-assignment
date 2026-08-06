@@ -3,15 +3,14 @@
 import Link from "next/link"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Minus, Plus, ShoppingCart, ArrowRight, Trash2, Shield } from "lucide-react"
+import { X, ShoppingCart, ArrowRight, Trash2, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useCartStore } from "@/stores/cart-store"
 import { formatPrice, cn } from "@/lib/utils"
 
 export function CartSidebar() {
-  const { items, isOpen, closeCart, removeItem, updateQty, totalItems, totalPrice } =
-    useCartStore()
+  const { items, isOpen, closeCart, removeItem, totalItems, totalPrice } = useCartStore()
 
   const total = totalPrice()
   const count = totalItems()
@@ -121,29 +120,10 @@ export function CartSidebar() {
                           <p className="mt-0.5 text-xs text-muted-foreground">
                             {item.product.sellerName}
                           </p>
-                          <div className="mt-auto flex items-center justify-between">
+                          <div className="mt-auto">
                             <p className="text-sm font-bold text-foreground">
-                              {formatPrice(item.product.price * item.qty)}
+                              {formatPrice(item.product.price)}
                             </p>
-
-                            {/* Qty controls */}
-                            <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5">
-                              <button
-                                onClick={() => updateQty(item.product.id, item.qty - 1)}
-                                className="flex h-7 w-7 items-center justify-center rounded-l-lg text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-                              >
-                                <Minus className="h-3 w-3" />
-                              </button>
-                              <span className="w-6 text-center text-xs font-semibold text-foreground">
-                                {item.qty}
-                              </span>
-                              <button
-                                onClick={() => updateQty(item.product.id, item.qty + 1)}
-                                className="flex h-7 w-7 items-center justify-center rounded-r-lg text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-                              >
-                                <Plus className="h-3 w-3" />
-                              </button>
-                            </div>
                           </div>
                         </div>
 
