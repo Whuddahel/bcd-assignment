@@ -39,10 +39,16 @@ function getAttestorWriter(): Contract {
 export type MintResult = { tokenId: string; alreadyMinted: boolean }
 
 /**
- * Mint the digital twin for a product. Idempotent: if the product was already
- * minted, returns the existing token id instead of reverting.
+ * Mint the digital twin for a product, owned by the selling user's own derived
+ * address (not the operator's — see `addressForUser`). Idempotent: if the
+ * product was already minted, returns the existing token id instead of
+ * reverting.
  */
-export async function mintOnChain(productUuid: string, metadataUri: string): Promise<MintResult> {
+export async function mintOnChain(
+  productUuid: string,
+  ownerAddress: string,
+  metadataUri: string,
+): Promise<MintResult> {
   if (!isBlockchainConfigured) throw new BlockchainNotConfiguredError()
 
   const asset = getAssetWriter()
@@ -51,7 +57,7 @@ export async function mintOnChain(productUuid: string, metadataUri: string): Pro
   const existing: bigint = await asset.tokenOfProduct(productId)
   if (existing > BigInt(0)) return { tokenId: existing.toString(), alreadyMinted: true }
 
-  const tx = await asset.mintDigitalTwin(productId, metadataUri)
+  const tx = await asset.mintDigitalTwin(productId, ownerAddress, metadataUri)
   const receipt = await tx.wait()
 
   // Recover the token id from the DigitalTwinMinted event.

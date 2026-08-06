@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { requireUser } from "@/lib/auth/session"
-import { getOrdersForBuyer } from "@/lib/data/orders"
+import { getOrdersForBuyer, getResoldOrderItemIds } from "@/lib/data/orders"
 import { getBlockchainRefs } from "@/lib/data/blockchain"
 import { CollectionClient, type CollectionEntry } from "./collection-client"
 
@@ -22,22 +22,28 @@ export default async function CollectionPage() {
 
   const owned = orders.filter((o) => OWNED_STATUSES.includes(o.status))
 
+  // Exclude items already relisted for resale — once sold onward, it's no
+  // longer genuinely "yours" even though this order is still in your history.
+  const resoldItemIds = await getResoldOrderItemIds(owned.flatMap((o) => o.items.map((it) => it.id)))
+
   // Look up on-chain token ids for every owned product in one query.
   const productIds = [...new Set(owned.flatMap((o) => o.items.map((it) => it.productId)))]
   const refs = await getBlockchainRefs(productIds)
 
   const items: CollectionEntry[] = owned.flatMap((o) =>
-    o.items.map((it) => ({
-      id: it.id,
-      title: it.title,
-      slug: it.slug,
-      gradient: it.gradient,
-      image: it.image,
-      purchasedDate: o.date,
-      purchasePrice: it.price,
-      currentValue: Math.round(it.price * upliftFactor(it.productId)),
-      tokenId: refs.get(it.productId)?.tokenId ?? null,
-    })),
+    o.items
+      .filter((it) => !resoldItemIds.has(it.id))
+      .map((it) => ({
+        id: it.id,
+        title: it.title,
+        slug: it.slug,
+        gradient: it.gradient,
+        image: it.image,
+        purchasedDate: o.date,
+        purchasePrice: it.price,
+        currentValue: Math.round(it.price * upliftFactor(it.productId)),
+        tokenId: refs.get(it.productId)?.tokenId ?? null,
+      })),
   )
 
   return <CollectionClient items={items} userId={user.id} />

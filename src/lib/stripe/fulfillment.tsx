@@ -136,6 +136,14 @@ export async function fulfilPaymentIntent(
   )
   if (itemsError) console.error("fulfilment: failed to create order_items", itemsError)
 
+  // Each listing is a one-of-a-kind item — no stock/quantity concept — so a
+  // successful purchase takes it off the market immediately.
+  const { error: soldError } = await supabase
+    .from("products")
+    .update({ status: "sold" })
+    .in("id", lineItems.map((item) => item.productId))
+  if (soldError) console.error("fulfilment: failed to mark products sold", soldError)
+
   await createSellerTransfers(paymentIntent, lineItems)
   await sendOrderConfirmation(buyerId, order.id, order.total_amount, lineItems)
 

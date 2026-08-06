@@ -71,11 +71,15 @@ async function main() {
   if (supabase) {
     const { data, error } = await supabase
       .from("products")
-      .select("id, title")
+      .select("id, title, seller_profiles(user_id)")
       .eq("status", "active")
       .limit(5)
     if (error) throw error
-    products = (data || []).map((p) => ({ id: p.id, title: p.title }))
+    products = (data || []).map((p) => ({
+      id: p.id,
+      title: p.title,
+      sellerUserId: p.seller_profiles?.user_id ?? null,
+    }))
     console.log(`→ Loaded ${products.length} product(s) from Supabase`)
   }
   if (!products || products.length === 0) {
@@ -83,6 +87,7 @@ async function main() {
     products = Array.from({ length: 5 }, (_, i) => ({
       id: `demo-product-${i + 1}`,
       title: `Demo Collectible #${i + 1}`,
+      sellerUserId: `demo-seller-${i + 1}`,
     }))
   }
 
@@ -103,7 +108,8 @@ async function main() {
     const existing = await asset.tokenOfProduct(productIdOnChain)
     let tokenId = existing
     if (existing === 0n) {
-      const tx = await asset.mintDigitalTwin(productIdOnChain, metadataUri)
+      const sellerAddress = addressForUser(p.sellerUserId || `demo-seller-${i + 1}`)
+      const tx = await asset.mintDigitalTwin(productIdOnChain, sellerAddress, metadataUri)
       const receipt = await tx.wait()
       // Recover tokenId from the DigitalTwinMinted event.
       const ev = receipt.logs

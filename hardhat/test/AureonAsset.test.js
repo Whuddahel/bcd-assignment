@@ -22,37 +22,37 @@ describe("AureonAsset", function () {
   describe("minting", function () {
     it("only approved sellers can mint", async function () {
       await expect(
-        asset.connect(stranger).mintDigitalTwin(PRODUCT_ID, METADATA),
+        asset.connect(stranger).mintDigitalTwin(PRODUCT_ID, seller.address, METADATA),
       ).to.be.revertedWithCustomError(asset, "AccessControlUnauthorizedAccount")
 
       // Approved seller succeeds.
-      await expect(asset.connect(seller).mintDigitalTwin(PRODUCT_ID, METADATA)).to.not.be.reverted
+      await expect(asset.connect(seller).mintDigitalTwin(PRODUCT_ID, seller.address, METADATA)).to.not.be.reverted
     })
 
     it("emits DigitalTwinMinted with correct args", async function () {
-      await expect(asset.connect(seller).mintDigitalTwin(PRODUCT_ID, METADATA))
+      await expect(asset.connect(seller).mintDigitalTwin(PRODUCT_ID, seller.address, METADATA))
         .to.emit(asset, "DigitalTwinMinted")
         .withArgs(1n, PRODUCT_ID, seller.address, anyValue)
     })
 
     it("assigns ownership to the seller and records the product mapping", async function () {
-      await asset.connect(seller).mintDigitalTwin(PRODUCT_ID, METADATA)
+      await asset.connect(seller).mintDigitalTwin(PRODUCT_ID, seller.address, METADATA)
       expect(await asset.ownerOf(1n)).to.equal(seller.address)
       expect(await asset.tokenOfProduct(PRODUCT_ID)).to.equal(1n)
       expect(await asset.totalMinted()).to.equal(1n)
     })
 
     it("cannot mint the same product twice", async function () {
-      await asset.connect(seller).mintDigitalTwin(PRODUCT_ID, METADATA)
+      await asset.connect(seller).mintDigitalTwin(PRODUCT_ID, seller.address, METADATA)
       await expect(
-        asset.connect(seller).mintDigitalTwin(PRODUCT_ID, METADATA),
+        asset.connect(seller).mintDigitalTwin(PRODUCT_ID, seller.address, METADATA),
       ).to.be.revertedWith("AureonAsset: product already minted")
     })
   })
 
   describe("provenance", function () {
     it("returns the correct history after mint", async function () {
-      await asset.connect(seller).mintDigitalTwin(PRODUCT_ID, METADATA)
+      await asset.connect(seller).mintDigitalTwin(PRODUCT_ID, seller.address, METADATA)
       const history = await asset.getProvenance(1n)
       expect(history.length).to.equal(1)
       expect(history[0].owner).to.equal(seller.address)
@@ -60,7 +60,7 @@ describe("AureonAsset", function () {
     })
 
     it("returns the correct history after a transfer", async function () {
-      await asset.connect(seller).mintDigitalTwin(PRODUCT_ID, METADATA)
+      await asset.connect(seller).mintDigitalTwin(PRODUCT_ID, seller.address, METADATA)
       await asset.connect(seller).transferAsset(1n, buyer.address)
 
       const history = await asset.getProvenance(1n)
@@ -75,7 +75,7 @@ describe("AureonAsset", function () {
 
   describe("transfer authorisation", function () {
     beforeEach(async function () {
-      await asset.connect(seller).mintDigitalTwin(PRODUCT_ID, METADATA)
+      await asset.connect(seller).mintDigitalTwin(PRODUCT_ID, seller.address, METADATA)
     })
 
     it("a non-owner, non-operator cannot transfer", async function () {
@@ -109,7 +109,7 @@ describe("AureonAsset", function () {
     it("owner can revoke a seller's minting rights", async function () {
       await asset.revokeSellerRole(seller.address)
       await expect(
-        asset.connect(seller).mintDigitalTwin(PRODUCT_ID, METADATA),
+        asset.connect(seller).mintDigitalTwin(PRODUCT_ID, seller.address, METADATA),
       ).to.be.revertedWithCustomError(asset, "AccessControlUnauthorizedAccount")
     })
 

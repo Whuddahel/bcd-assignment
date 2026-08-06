@@ -136,6 +136,7 @@ export interface Database {
           blockchain_token_id: string | null
           blockchain_minted_at: string | null
           blockchain_attested_at: string | null
+          resale_of_order_item_id: string | null
           is_featured: boolean
           is_trending: boolean
           view_count: number
@@ -162,6 +163,7 @@ export interface Database {
           blockchain_token_id?: string | null
           blockchain_minted_at?: string | null
           blockchain_attested_at?: string | null
+          resale_of_order_item_id?: string | null
           is_featured?: boolean
           is_trending?: boolean
           view_count?: number
@@ -181,6 +183,12 @@ export interface Database {
             foreignKeyName: "products_category_id_fkey"
             columns: ["category_id"]
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_resale_of_order_item_id_fkey"
+            columns: ["resale_of_order_item_id"]
+            referencedRelation: "order_items"
             referencedColumns: ["id"]
           },
         ]

@@ -43,7 +43,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Order not found." }, { status: 404 })
   }
 
+  // "shipped" is set by the seller/admin fulfilling the order; "delivered" is
+  // confirmed by the buyer receiving it (or by the seller/admin on their behalf).
   let authorized = user.role === "admin"
+  if (!authorized && status === "delivered") {
+    authorized = order.buyer_id === user.id
+  }
   if (!authorized && user.role === "seller") {
     const { data: seller } = await admin
       .from("seller_profiles")
@@ -95,10 +100,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // the order. Non-critical: a chain hiccup must not block the status update.
   if (status === "delivered" && isBlockchainConfigured) {
     try {
-      const { data: lineItems } = await admin
+      const { data: lineItems, error: lineItemsError } = await admin
         .from("order_items")
-        .select("product_id, products(blockchain_token_id)")
+        .select("product_id, products!order_items_product_id_fkey(blockchain_token_id)")
         .eq("order_id", order.id)
+      if (lineItemsError) console.error("Failed to load line items for delivery transfer:", lineItemsError.message)
 
       for (const item of lineItems ?? []) {
         const tokenId = (item.products as { blockchain_token_id?: string | null } | null)

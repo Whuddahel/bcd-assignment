@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { createSupabaseServerClient, createSupabaseServerAdminClient } from "@/lib/supabase/server"
 import { getSessionUser } from "@/lib/auth/session"
 import { slugify } from "@/lib/utils"
 import type { ProductStatus } from "@/types/database"
@@ -130,4 +130,119 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
   revalidatePath("/seller/products")
   revalidatePath("/browse")
   return { ok: true, message: "Listing deleted." }
+}
+
+// Must be "delivered" specifically — that's the exact moment the on-chain
+// transfer to this buyer actually happens (see status/route.tsx). Allowing an
+// earlier status here would let someone relist an item before the token was
+// ever transferred to them, silently skipping their own ownership hop from
+// the on-chain provenance chain.
+const RESALE_OWNED_STATUSES = ["delivered"]
+
+const resaleSchema = z.object({
+  sourceOrderItemId: z.string().min(1, "Pick an item from your collection"),
+  price: z.number().positive("Price must be greater than 0"),
+})
+
+export type ResaleInput = z.input<typeof resaleSchema>
+
+/**
+ * Create a listing sourced from an item the seller already owns (a delivered
+ * order_item), instead of describing a brand-new item. Title/description/
+ * condition/category/images/attributes are copied verbatim from the original
+ * listing — it's physically the same item. If that original was minted, the
+ * existing token id carries over so no second token is ever minted for it;
+ * the next delivery's existing transfer-on-delivery logic moves that same
+ * token to the new buyer.
+ */
+export async function createResaleListing(input: ResaleInput): Promise<ActionResult> {
+  const parsed = resaleSchema.safeParse(input)
+  if (!parsed.success) {
+    return { ok: false, error: "Check the form", fieldErrors: flatten(parsed.error) }
+  }
+
+  const user = await getSessionUser()
+  if (!user || user.isMock) return { ok: false, error: "You must be signed in." }
+
+  const sellerId = await currentSellerId()
+  if (!sellerId) return { ok: false, error: "You need an approved seller profile to list items." }
+
+  const supabase = await createSupabaseServerClient()
+
+  // Verify the caller genuinely owns this item as a buyer (RLS already scopes
+  // `orders`/`order_items` reads to the caller's own rows).
+  const { data: sourceItem } = await supabase
+    .from("order_items")
+    .select("id, product_id, orders(buyer_id, status)")
+    .eq("id", parsed.data.sourceOrderItemId)
+    .maybeSingle()
+
+  const order = sourceItem?.orders as { buyer_id: string; status: string } | null
+  if (!sourceItem || !order || order.buyer_id !== user.id || !RESALE_OWNED_STATUSES.includes(order.status)) {
+    return { ok: false, error: "You don't own this item." }
+  }
+
+  // One resale listing per owned item at a time (also enforced by a unique index).
+  const { data: alreadyListed } = await supabase
+    .from("products")
+    .select("id")
+    .eq("resale_of_order_item_id", sourceItem.id)
+    .maybeSingle()
+  if (alreadyListed) return { ok: false, error: "This item is already listed for resale." }
+
+  // Read the original listing's full detail. By now it's very likely
+  // `status = "sold"` and owned by a *different* seller, so `products_select_active`
+  // RLS won't expose it to this caller — ownership of the physical item was
+  // already proven above via the buyer-side order/order_items tables, so the
+  // admin client is used here purely to read what RLS would otherwise hide.
+  const admin = await createSupabaseServerAdminClient()
+  const { data: source } = await admin
+    .from("products")
+    .select(
+      "title, description, condition, category_id, attributes, blockchain_token_id, blockchain_minted_at, product_images(url, alt, sort_order, is_primary)",
+    )
+    .eq("id", sourceItem.product_id)
+    .maybeSingle()
+
+  if (!source) return { ok: false, error: "Could not find the original listing for this item." }
+
+  const slug = `${slugify(source.title)}-${Math.random().toString(36).slice(2, 7)}`
+
+  const { data: product, error } = await supabase
+    .from("products")
+    .insert({
+      seller_id: sellerId,
+      resale_of_order_item_id: sourceItem.id,
+      category_id: source.category_id,
+      title: source.title,
+      slug,
+      description: source.description,
+      condition: source.condition,
+      status: "pending_review",
+      price: Math.round(parsed.data.price * 100),
+      attributes: source.attributes ?? {},
+      blockchain_token_id: source.blockchain_token_id,
+      blockchain_minted_at: source.blockchain_minted_at,
+    })
+    .select("id, slug")
+    .single()
+
+  if (error || !product) return { ok: false, error: error?.message ?? "Could not create listing." }
+
+  const images = source.product_images ?? []
+  if (images.length > 0) {
+    await supabase.from("product_images").insert(
+      images.map((img) => ({
+        product_id: product.id,
+        url: img.url,
+        alt: img.alt,
+        sort_order: img.sort_order,
+        is_primary: img.is_primary,
+      })),
+    )
+  }
+
+  revalidatePath("/seller/products")
+  revalidatePath("/browse")
+  return { ok: true, message: "Resale listing created.", slug: product.slug }
 }

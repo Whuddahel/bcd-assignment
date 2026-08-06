@@ -4,6 +4,7 @@ import { Package, ChevronRight, Truck, MapPin } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { GradientText } from "@/components/brand/gradient-text"
+import { MarkDeliveredButton } from "@/components/orders/mark-delivered-button"
 import { requireUser } from "@/lib/auth/session"
 import { getOrdersForBuyer } from "@/lib/data/orders"
 import { formatPrice, formatDate } from "@/lib/utils"
@@ -107,6 +108,13 @@ export default async function OrdersPage() {
                       {order.shippingAddress.country}
                     </span>
                   </p>
+                </div>
+              )}
+
+              {/* Confirm receipt — also what completes the on-chain ownership transfer */}
+              {(order.status === "confirmed" || order.status === "shipped") && (
+                <div className="mt-4 flex justify-end border-t border-white/5 pt-4">
+                  <MarkDeliveredButton orderId={order.id} />
                 </div>
               )}
             </div>

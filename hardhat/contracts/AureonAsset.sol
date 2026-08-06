@@ -90,32 +90,40 @@ contract AureonAsset is ERC721, AccessControl, Ownable {
     /**
      * @notice Mint the digital twin for a product. Callable by approved sellers only.
      * @param productId  Off-chain product reference (a hashed Supabase UUID).
+     * @param owner      The selling user's own derived address (not the caller —
+     *                   the platform operator signs on every seller's behalf, since
+     *                   sellers have no wallets in this demo; see identity.ts's
+     *                   `addressForUser`). Minting straight to this address, rather
+     *                   than to `msg.sender`, is what makes the provenance array a
+     *                   real per-user chain from the very first entry instead of
+     *                   every token starting out "owned" by the same operator key.
      * @param metadataUri JSON/URI describing the item (title, images, Supabase id).
      * @return tokenId The freshly minted token id.
      */
-    function mintDigitalTwin(uint256 productId, string memory metadataUri)
+    function mintDigitalTwin(uint256 productId, address owner, string memory metadataUri)
         external
         onlyRole(SELLER_ROLE)
         returns (uint256 tokenId)
     {
         require(tokenOfProduct[productId] == 0, "AureonAsset: product already minted");
+        require(owner != address(0), "AureonAsset: mint to zero address");
 
         tokenId = _nextTokenId++;
-        _safeMint(msg.sender, tokenId);
+        _safeMint(owner, tokenId);
 
         _assets[tokenId] = AssetInfo({
             productId: productId,
-            seller: msg.sender,
+            seller: owner,
             mintedAt: block.timestamp,
             metadataUri: metadataUri
         });
         tokenOfProduct[productId] = tokenId;
 
         _provenance[tokenId].push(
-            ProvenanceEntry({ owner: msg.sender, timestamp: block.timestamp, eventType: "Minted" })
+            ProvenanceEntry({ owner: owner, timestamp: block.timestamp, eventType: "Minted" })
         );
 
-        emit DigitalTwinMinted(tokenId, productId, msg.sender, block.timestamp);
+        emit DigitalTwinMinted(tokenId, productId, owner, block.timestamp);
     }
 
     // ─── Ownership transfer ──────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ import {
 } from "@/lib/supabase/server"
 import { mintOnChain, attestOnChain } from "@/lib/blockchain/server"
 import { isBlockchainConfigured } from "@/lib/blockchain/config"
+import { addressForUser } from "@/lib/blockchain/identity"
 
 // Platform blockchain actions. The browser never signs anything — these run on
 // the server, resolve the caller's role, then use the operator signer. The write
@@ -51,6 +52,7 @@ export async function mintDigitalTwinAction(
   if (!product) return { ok: false, error: "Product not found." }
 
   const ownerUserId = (product.seller_profiles as { user_id?: string } | null)?.user_id
+  if (!ownerUserId) return { ok: false, error: "Could not resolve this product's seller." }
   if (user.role !== "admin" && ownerUserId !== user.id) {
     return { ok: false, error: "You can only mint your own listings." }
   }
@@ -68,7 +70,7 @@ export async function mintDigitalTwinAction(
   })
 
   try {
-    const { tokenId, alreadyMinted } = await mintOnChain(product.id, metadataUri)
+    const { tokenId, alreadyMinted } = await mintOnChain(product.id, addressForUser(ownerUserId), metadataUri)
 
     // Bridge the token id back into Supabase (admin client — bypass RLS).
     const admin = await createSupabaseServerAdminClient()
