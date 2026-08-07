@@ -106,7 +106,7 @@ export default async function AccountPage() {
       </div>
 
       {/* Quick links */}
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+      <div className="mt-6 grid gap-3">
         <Button variant="outline" className="h-auto justify-start gap-3 border-white/10 p-4 hover:bg-white/5" asChild>
           <Link href="/browse">
             <Package className="h-4 w-4 text-violet-400" />
