@@ -10,6 +10,7 @@ import {
 import { Header } from "@/components/layout/header"
 import { signOut } from "@/lib/auth/actions"
 import { cn } from "@/lib/utils"
+import { useCartStore } from "@/stores/cart-store"
 
 const NAV = [
   { href: "/account",              label: "Overview",    icon: LayoutDashboard },
@@ -23,6 +24,7 @@ const NAV = [
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [signingOut, startSignOut] = useTransition()
+  const clearCart = useCartStore((s) => s.clearCart)
 
   return (
     <>
@@ -56,7 +58,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
               })}
             </nav>
             <button
-              onClick={() => startSignOut(async () => { await signOut() })}
+              onClick={() => startSignOut(async () => { clearCart(); await signOut() })}
               disabled={signingOut}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition-all hover:bg-white/5 hover:text-foreground disabled:opacity-60"
             >

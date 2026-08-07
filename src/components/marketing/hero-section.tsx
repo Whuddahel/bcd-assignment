@@ -1,14 +1,16 @@
 "use client"
 
-import { useRef, useState, useEffect } from "react"
+import { useRef } from "react"
 import Link from "next/link"
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
-import { ArrowRight, Shield, Star, TrendingUp, Zap, ChevronUp, ChevronDown } from "lucide-react"
+import { motion, useScroll, useTransform } from "framer-motion"
+import { ArrowRight, Shield, Star, TrendingUp, Zap, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { GradientText } from "@/components/brand/gradient-text"
 import { HeroBlobBackground } from "@/components/brand/gradient-blob"
 import { NoiseOverlay } from "@/components/brand/noise-overlay"
+import { formatPrice } from "@/lib/utils"
+import type { HeroCard, HomeStat, LatestSale, TickerItem } from "@/lib/data/home"
 
 const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number]
 
@@ -21,22 +23,17 @@ const stagger = {
   show: { transition: { staggerChildren: 0.1 } },
 }
 
-const stats = [
-  { label: "Verified items",  value: "2,400+", icon: Shield    },
-  { label: "Trusted sellers", value: "180+",   icon: Star      },
-  { label: "Total traded",    value: "$12M+",  icon: TrendingUp },
+const STAT_ICONS = [Shield, Star, TrendingUp]
+
+/** The three visual treatments the hero stack cycles through. */
+const CARD_STYLES = [
+  { gradient: "bg-gradient-to-br from-violet-600/60 via-violet-900/80 to-midnight-100", rotate: "-4deg", offset: { top: "20%", left: "5%" },     zIndex: 3 },
+  { gradient: "bg-gradient-to-br from-pink-600/60 via-pink-900/80 to-midnight-100",     rotate: "5deg",  offset: { top: "8%", right: "10%" },    zIndex: 2 },
+  { gradient: "bg-gradient-to-br from-amber-600/50 via-amber-900/70 to-midnight-100",   rotate: "3deg",  offset: { bottom: "12%", left: "10%" }, zIndex: 1 },
 ]
 
-// Live price ticker — mock live data
-const TICKER_ITEMS = [
-  { id: "t1", title: "Patek Nautilus 5711",    price: "$87,500",  delta: "+2.4%", up: true  },
-  { id: "t2", title: "Richard Mille RM 11-03", price: "$185,000", delta: "+0.9%", up: true  },
-  { id: "t3", title: "Banksy Balloon Girl",    price: "$95,000",  delta: "-1.2%", up: false },
-  { id: "t4", title: "KAWS SHARE Original",    price: "$285,000", delta: "+4.1%", up: true  },
-  { id: "t5", title: "Hermès Birkin 30",       price: "$42,000",  delta: "+1.8%", up: true  },
-]
-
-function LiveTicker() {
+/** Current asking prices, straight off the live listings. */
+function LiveTicker({ items }: { items: TickerItem[] }) {
   return (
     <div className="flex items-center gap-2 overflow-hidden rounded-full border border-white/10 bg-white/3 px-4 py-2 backdrop-blur-sm">
       <Zap className="h-3.5 w-3.5 shrink-0 text-amber-400" />
@@ -47,14 +44,16 @@ function LiveTicker() {
           transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
           className="flex gap-6 whitespace-nowrap"
         >
-          {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
-            <span key={i} className="flex items-center gap-1.5 text-[11px]">
+          {[...items, ...items].map((item, i) => (
+            <span key={`${item.id}-${i}`} className="flex items-center gap-1.5 text-[11px]">
               <span className="text-muted-foreground">{item.title}</span>
-              <span className="font-semibold text-foreground">{item.price}</span>
-              <span className={`flex items-center gap-0.5 font-medium ${item.up ? "text-emerald-400" : "text-red-400"}`}>
-                {item.up ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                {item.delta}
-              </span>
+              <span className="font-semibold text-foreground">{formatPrice(item.price)}</span>
+              {item.delta && (
+                <span className="flex items-center gap-0.5 font-medium text-emerald-400">
+                  <ChevronDown className="h-3 w-3" />
+                  {item.delta}
+                </span>
+              )}
             </span>
           ))}
         </motion.div>
@@ -64,64 +63,74 @@ function LiveTicker() {
 }
 
 function ProductCardHero({
-  title,
-  price,
-  tier,
-  gradient,
-  rotate,
+  card,
+  style,
   delay,
-  zIndex,
-  offset,
 }: {
-  title: string
-  price: string
-  tier: string
-  gradient: string
-  rotate: string
+  card: HeroCard
+  style: (typeof CARD_STYLES)[number]
   delay: number
-  zIndex: number
-  offset?: { top?: string; right?: string; bottom?: string; left?: string }
 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 40, rotate: 0 }}
-      animate={{ opacity: 1, y: 0, rotate: parseFloat(rotate) }}
+      animate={{ opacity: 1, y: 0, rotate: parseFloat(style.rotate) }}
       transition={{ duration: 0.9, delay, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
       className="animate-float glass-card absolute rounded-2xl p-px shadow-card-hover"
       style={{
-        zIndex,
-        ["--rotate" as string]: rotate,
+        zIndex: style.zIndex,
+        ["--rotate" as string]: style.rotate,
         animationDelay: `${delay}s`,
-        ...offset,
+        ...style.offset,
       }}
     >
-      <div className="overflow-hidden rounded-[14px]">
-        <div className={`h-44 w-64 ${gradient} relative flex items-end p-3`} aria-hidden="true">
+      <Link href={`/product/${card.slug}`} className="block overflow-hidden rounded-[14px]">
+        <div className={`h-44 w-64 ${style.gradient} relative flex items-end p-3`}>
+          {card.image && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={card.image}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover opacity-70"
+            />
+          )}
           {/* Shimmer shine */}
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent" />
-          <div className="flex w-full items-center justify-between">
+          <div className="relative flex w-full items-center justify-between">
             <span className="rounded-full bg-black/40 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/90 backdrop-blur-sm">
-              {tier}
+              {card.tier}
             </span>
-            <div className="flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 backdrop-blur-sm">
-              <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              <span className="text-[10px] font-medium text-emerald-300">Verified</span>
-            </div>
+            {card.verified && (
+              <div className="flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 backdrop-blur-sm">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <span className="text-[10px] font-medium text-emerald-300">Verified</span>
+              </div>
+            )}
           </div>
         </div>
         <div className="bg-midnight-50 px-4 py-3">
-          <p className="text-sm font-semibold text-foreground">{title}</p>
+          <p className="line-clamp-1 text-sm font-semibold text-foreground">{card.title}</p>
           <div className="mt-1.5 flex items-center justify-between">
             <span className="text-[11px] text-muted-foreground">Ask price</span>
-            <span className="text-sm font-bold text-foreground">{price}</span>
+            <span className="text-sm font-bold text-foreground">{formatPrice(card.price)}</span>
           </div>
         </div>
-      </div>
+      </Link>
     </motion.div>
   )
 }
 
-export function HeroSection() {
+export function HeroSection({
+  stats,
+  ticker,
+  cards,
+  latestSale,
+}: {
+  stats: HomeStat[]
+  ticker: TickerItem[]
+  cards: HeroCard[]
+  latestSale: LatestSale | null
+}) {
   const containerRef = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -162,10 +171,12 @@ export function HeroSection() {
             animate="show"
             className="flex flex-col items-start"
           >
-            {/* Live ticker */}
-            <motion.div variants={fadeUp} className="mb-6 w-full max-w-xl">
-              <LiveTicker />
-            </motion.div>
+            {/* Live ticker — only meaningful once there are listings to show */}
+            {ticker.length >= 3 && (
+              <motion.div variants={fadeUp} className="mb-6 w-full max-w-xl">
+                <LiveTicker items={ticker} />
+              </motion.div>
+            )}
 
             {/* Badge */}
             <motion.div variants={fadeUp}>
@@ -231,7 +242,9 @@ export function HeroSection() {
               variants={fadeUp}
               className="mt-14 flex flex-wrap gap-8"
             >
-              {stats.map(({ label, value, icon: Icon }) => (
+              {stats.map(({ label, value }, i) => {
+                const Icon = STAT_ICONS[i] ?? Shield
+                return (
                 <div key={label} className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 ring-1 ring-white/10">
                     <Icon className="h-4 w-4 text-violet-400" />
@@ -241,7 +254,8 @@ export function HeroSection() {
                     <p className="text-xs text-muted-foreground">{label}</p>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </motion.div>
           </motion.div>
 
@@ -257,46 +271,14 @@ export function HeroSection() {
               aria-hidden="true"
             />
 
-            {/* Main card — watch */}
-            <div style={{ position: "absolute", top: "20%", left: "5%" }}>
-              <ProductCardHero
-                title="Patek Philippe Nautilus"
-                price="$87,500"
-                tier="Ultra Rare"
-                gradient="bg-gradient-to-br from-violet-600/60 via-violet-900/80 to-midnight-100"
-                rotate="-4deg"
-                delay={0.3}
-                zIndex={3}
-              />
-            </div>
+            {/* Real listings, most-viewed first */}
+            {cards.map((card, i) => (
+              <div key={card.id} style={{ position: "absolute", ...CARD_STYLES[i].offset }}>
+                <ProductCardHero card={card} style={CARD_STYLES[i]} delay={0.3 + i * 0.2} />
+              </div>
+            ))}
 
-            {/* Second card — art piece */}
-            <div style={{ position: "absolute", top: "8%", right: "10%" }}>
-              <ProductCardHero
-                title="Banksy 'Girl with Balloon'"
-                price="$95,000"
-                tier="1 of 150"
-                gradient="bg-gradient-to-br from-pink-600/60 via-pink-900/80 to-midnight-100"
-                rotate="5deg"
-                delay={0.5}
-                zIndex={2}
-              />
-            </div>
-
-            {/* Third card — designer */}
-            <div style={{ position: "absolute", bottom: "12%", left: "10%" }}>
-              <ProductCardHero
-                title="Hermès Birkin 30 Bleu"
-                price="$42,000"
-                tier="Investment"
-                gradient="bg-gradient-to-br from-amber-600/50 via-amber-900/70 to-midnight-100"
-                rotate="3deg"
-                delay={0.7}
-                zIndex={1}
-              />
-            </div>
-
-            {/* Floating verified badge */}
+            {/* Floating verified badge — provenance is recorded on-chain (Phase 2) */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8, y: -8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -305,26 +287,27 @@ export function HeroSection() {
             >
               <Shield className="h-4 w-4 text-emerald-400" />
               <span className="text-sm font-semibold text-foreground">Verified Authentic</span>
-              {/* BLOCKCHAIN: This badge will show on-chain certificate hash in Phase 2.
-                  The "Verified Authentic" state will be backed by authenticity_certificates
-                  table (on-chain) rather than our off-chain verification flag. */}
             </motion.div>
 
-            {/* Floating sale notification */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, x: 12 }}
-              animate={{ opacity: 1, scale: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 1.4 }}
-              className="glass-card absolute bottom-24 right-4 z-10 flex items-center gap-2.5 rounded-2xl px-4 py-3"
-            >
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/20">
-                <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold text-foreground">Just sold</p>
-                <p className="text-[10px] text-muted-foreground">Rolex Daytona · $38,500</p>
-              </div>
-            </motion.div>
+            {/* Floating sale notification — the marketplace's most recent sale */}
+            {latestSale && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, x: 12 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 1.4 }}
+                className="glass-card absolute bottom-24 right-4 z-10 flex items-center gap-2.5 rounded-2xl px-4 py-3"
+              >
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/20">
+                  <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+                </div>
+                <div className="max-w-[180px]">
+                  <p className="text-[11px] font-semibold text-foreground">Just sold</p>
+                  <p className="truncate text-[10px] text-muted-foreground">
+                    {latestSale.title} · {formatPrice(latestSale.price)}
+                  </p>
+                </div>
+              </motion.div>
+            )}
           </div>
         </div>
       </motion.div>

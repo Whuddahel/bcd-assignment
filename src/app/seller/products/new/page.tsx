@@ -7,7 +7,7 @@ import { NewListingForm } from "./new-listing-form"
 export const metadata: Metadata = { title: "New Listing" }
 
 export default async function NewListingPage() {
-  const user = await requireUser(["seller", "admin"])
+  const user = await requireUser(["seller", "admin", "support"])
   const [categories, resaleCandidates] = await Promise.all([
     getCategories(),
     getResaleCandidates(user.id),

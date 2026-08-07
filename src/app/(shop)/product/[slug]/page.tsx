@@ -5,7 +5,7 @@ import {
   getRelatedProducts,
   incrementProductView,
 } from "@/lib/data/products"
-import { getReviewsForProduct } from "@/lib/data/reviews"
+import { getReviewsForProduct, findPurchaseForReview } from "@/lib/data/reviews"
 import { getWishlistIds } from "@/lib/data/wishlist"
 import { getBlockchainRef } from "@/lib/data/blockchain"
 import { getSessionUser } from "@/lib/auth/session"
@@ -36,11 +36,12 @@ export default async function ProductPage({
 
   const user = await getSessionUser()
 
-  const [related, reviews, wishlistedIds, blockchainRef] = await Promise.all([
+  const [related, reviews, wishlistedIds, blockchainRef, purchase] = await Promise.all([
     getRelatedProducts(product.categorySlug, product.id, 4),
     getReviewsForProduct(product.id),
     user && !user.isMock ? getWishlistIds(user.id) : Promise.resolve(new Set<string>()),
     getBlockchainRef(product.id),
+    user && !user.isMock ? findPurchaseForReview(user.id, product.id) : Promise.resolve(null),
   ])
 
   // Fire-and-forget view bump (never blocks render).
@@ -57,7 +58,7 @@ export default async function ProductPage({
       reviews={reviews}
       avgRating={avgRating}
       wishlistedDefault={wishlistedIds.has(product.id)}
-      canReview={Boolean(user && !user.isMock)}
+      canReview={Boolean(purchase)}
       blockchainTokenId={blockchainRef?.tokenId ?? null}
     />
   )

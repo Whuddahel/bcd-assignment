@@ -31,7 +31,9 @@ const TABS: { value: TabKey; label: string; icon: React.ElementType }[] = [
 export function AdminUsersClient({ users }: { users: AdminUser[] }) {
   const [query,     setQuery]     = useState("")
   const [tab,       setTab]       = useState<TabKey>("all")
-  const [suspended, setSuspended] = useState<Set<string>>(new Set())
+  const [suspended, setSuspended] = useState<Set<string>>(
+    () => new Set(users.filter((u) => u.banned).map((u) => u.id)),
+  )
 
   const filtered = users.filter((u) => {
     const matchesTab   = tab === "all" || u.role === tab

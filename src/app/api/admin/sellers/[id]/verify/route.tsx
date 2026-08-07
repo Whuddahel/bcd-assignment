@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { useLiveData } from "@/lib/config"
 import { getSessionUser } from "@/lib/auth/session"
 import { createSupabaseServerAdminClient } from "@/lib/supabase/server"
+import { notify } from "@/lib/data/notifications"
 import { sendEmail } from "@/lib/email/client"
 import SellerApprovalEmail from "@/emails/seller-approval"
 import { env } from "@/lib/env"
@@ -46,6 +47,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (updateError) {
     return NextResponse.json({ error: "Failed to verify seller." }, { status: 500 })
   }
+
+  await notify({
+    userId: seller.user_id,
+    type: "seller_approved",
+    title: "Your seller account is verified",
+    body: `${seller.business_name} now carries the verified badge. Your listings can go live.`,
+    href: "/seller",
+  })
 
   try {
     const { data: authUser } = await admin.auth.admin.getUserById(seller.user_id)

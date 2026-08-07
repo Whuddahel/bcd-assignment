@@ -4,61 +4,22 @@ import { motion } from "framer-motion"
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 import { GradientText } from "@/components/brand/gradient-text"
+import type { CategoryTile } from "@/lib/data/home"
 
-const categories = [
-  {
-    slug: "watches",
-    name: "Watches",
-    count: "340+",
-    description: "Swiss movements, investment dials",
-    gradient: "from-violet-500/20 to-violet-900/10",
-    emoji: "⌚",
-    href: "/browse?category=watches",
-    span: "lg:col-span-2",
-  },
-  {
-    slug: "art",
-    name: "Fine Art",
-    count: "210+",
-    description: "Contemporary prints & originals",
-    gradient: "from-pink-500/20 to-pink-900/10",
-    emoji: "🖼",
-    href: "/browse?category=fine-art",
-    span: "",
-  },
-  {
-    slug: "designer",
-    name: "Designer",
-    count: "175+",
-    description: "Handbags, RTW, accessories",
-    gradient: "from-amber-500/20 to-amber-900/10",
-    emoji: "👜",
-    href: "/browse?category=designer",
-    span: "",
-  },
-  {
-    slug: "rare",
-    name: "Rare Collectibles",
-    count: "95+",
-    description: "One-of-a-kind museum-quality pieces",
-    gradient: "from-emerald-500/20 to-emerald-900/10",
-    emoji: "💎",
-    href: "/browse?category=rare-items",
-    span: "",
-  },
-  {
-    slug: "jewelry",
-    name: "Fine Jewelry",
-    count: "130+",
-    description: "Diamonds, sapphires, estate pieces",
-    gradient: "from-sky-500/20 to-sky-900/10",
-    emoji: "💍",
-    href: "/browse?category=jewellery",
-    span: "lg:col-span-2",
-  },
-]
+// Presentation only — the names, descriptions and counts come from the database.
+const CATEGORY_STYLE: Record<string, { gradient: string; emoji: string }> = {
+  watches:      { gradient: "from-violet-500/20 to-violet-900/10",   emoji: "⌚" },
+  "fine-art":   { gradient: "from-pink-500/20 to-pink-900/10",       emoji: "🖼" },
+  designer:     { gradient: "from-amber-500/20 to-amber-900/10",     emoji: "👜" },
+  "rare-items": { gradient: "from-emerald-500/20 to-emerald-900/10", emoji: "💎" },
+  jewellery:    { gradient: "from-sky-500/20 to-sky-900/10",         emoji: "💍" },
+  collectibles: { gradient: "from-fuchsia-500/20 to-fuchsia-900/10", emoji: "🏺" },
+}
+const FALLBACK_STYLE = { gradient: "from-violet-500/20 to-violet-900/10", emoji: "✦" }
 
-export function CategoryShowcase() {
+export function CategoryShowcase({ categories }: { categories: CategoryTile[] }) {
+  if (categories.length === 0) return null
+
   return (
     <section className="bg-midnight-50/50 py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -92,21 +53,26 @@ export function CategoryShowcase() {
           variants={{ show: { transition: { staggerChildren: 0.1 } } }}
           className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {categories.map((cat) => (
+          {categories.map((cat, i) => {
+            const style = CATEGORY_STYLE[cat.slug] ?? FALLBACK_STYLE
+            // Give the first and last tile the wide slot, as the original layout did.
+            const span = i === 0 || i === categories.length - 1 ? "lg:col-span-2" : ""
+
+            return (
             <motion.div
               key={cat.slug}
               variants={{
                 hidden: { opacity: 0, scale: 0.96 },
                 show:   { opacity: 1, scale: 1, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } },
               }}
-              className={cat.span}
+              className={span}
             >
-              <Link href={cat.href} className="group block h-full">
+              <Link href={`/browse?category=${cat.slug}`} className="group block h-full">
                 <div
-                  className={`glass-card flex h-full min-h-[160px] flex-col justify-between rounded-2xl bg-gradient-to-br ${cat.gradient} p-6 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card-hover`}
+                  className={`glass-card flex h-full min-h-[160px] flex-col justify-between rounded-2xl bg-gradient-to-br ${style.gradient} p-6 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card-hover`}
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <span className="text-4xl">{cat.emoji}</span>
+                    <span className="text-4xl">{style.emoji}</span>
                     <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-muted-foreground transition-all group-hover:border-white/25 group-hover:text-foreground">
                       <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                     </div>
@@ -117,14 +83,19 @@ export function CategoryShowcase() {
                       <h3 className="font-display text-xl font-semibold text-foreground">
                         {cat.name}
                       </h3>
-                      <span className="text-xs text-muted-foreground">{cat.count}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {cat.count === 0
+                          ? "No listings yet"
+                          : `${cat.count} ${cat.count === 1 ? "listing" : "listings"}`}
+                      </span>
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">{cat.description}</p>
                   </div>
                 </div>
               </Link>
             </motion.div>
-          ))}
+            )
+          })}
         </motion.div>
       </div>
     </section>

@@ -30,7 +30,7 @@ export function AnalyticsClient({
       {/* KPI row */}
       <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Total Revenue",   value: formatPrice(stats.totalRevenue),  icon: TrendingUp, color: "text-violet-400" },
+          { label: "Total Revenue (after fees)", value: formatPrice(stats.totalRevenue),  icon: TrendingUp, color: "text-violet-400" },
           { label: "Units Sold",      value: stats.totalSales,                  icon: Package,   color: "text-pink-400"   },
           { label: "Active Listings", value: stats.activeListings,              icon: Users,     color: "text-amber-400"  },
           { label: "Avg. Rating",     value: `${stats.averageRating} ★`,       icon: Star,      color: "text-emerald-400"},

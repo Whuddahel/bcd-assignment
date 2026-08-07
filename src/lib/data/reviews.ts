@@ -1,6 +1,7 @@
 import "server-only"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { mapReview, type ReviewVM } from "./types"
+import type { OrderStatus } from "@/types/database"
 
 const REVIEW_SELECT = "*, profiles(full_name, avatar_url)"
 
@@ -39,6 +40,29 @@ export async function getReviewSummary(productId: string): Promise<ReviewSummary
     count: rows.length,
     distribution,
   }
+}
+
+// A review only counts as a verified purchase once the order actually went
+// through — not "pending" (payment not yet confirmed) or "cancelled"/"refunded"
+// (never happened or was undone).
+const QUALIFYING_ORDER_STATUSES: OrderStatus[] = ["confirmed", "shipped", "delivered"]
+
+/** The buyer's own order_item for this product, if they've actually bought it. */
+export async function findPurchaseForReview(
+  userId: string,
+  productId: string,
+): Promise<{ orderId: string } | null> {
+  const supabase = await createSupabaseServerClient()
+  const { data } = await supabase
+    .from("order_items")
+    .select("order_id, orders!inner(buyer_id, status)")
+    .eq("product_id", productId)
+    .eq("orders.buyer_id", userId)
+    .in("orders.status", QUALIFYING_ORDER_STATUSES)
+    .limit(1)
+    .maybeSingle()
+
+  return data ? { orderId: data.order_id } : null
 }
 
 /** A few recent high-rated reviews for marketing/testimonials. */

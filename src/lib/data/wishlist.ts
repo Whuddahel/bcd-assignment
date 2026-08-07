@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { mapProduct, type ProductVM, type ProductRow } from "./types"
 
 const NESTED_PRODUCT =
-  "products(*, product_images(url,sort_order,is_primary), seller_profiles(business_name,verified), categories(name,slug))"
+  "products(*, product_images(url,sort_order,is_primary), seller_profiles(business_name,verified,logo_url), categories(name,slug))"
 
 export async function getWishlist(userId: string): Promise<ProductVM[]> {
   const supabase = await createSupabaseServerClient()

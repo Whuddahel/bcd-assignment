@@ -11,6 +11,7 @@ import { GradientText } from "@/components/brand/gradient-text"
 import { toast } from "sonner"
 import { useUser } from "@/hooks/use-user"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
+import { DeleteAccountDialog } from "./delete-account-dialog"
 
 export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
@@ -225,11 +226,11 @@ export default function ProfilePage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-foreground">Delete account</p>
-              <p className="text-xs text-muted-foreground">Permanently remove your account and all data.</p>
+              <p className="text-xs text-muted-foreground">
+                Erase your personal data and close this account for good.
+              </p>
             </div>
-            <Button variant="outline" size="sm" type="button" className="border-red-500/30 text-red-400 hover:bg-red-500/10">
-              Delete account
-            </Button>
+            <DeleteAccountDialog />
           </div>
         </div>
 

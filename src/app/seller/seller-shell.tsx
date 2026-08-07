@@ -23,10 +23,12 @@ const PROFILE_NAV = { href: "/seller/apply", label: "Business Profile", icon: St
 export function SellerShell({
   isSeller,
   businessName,
+  logoUrl,
   children,
 }: {
   isSeller: boolean
   businessName: string | null
+  logoUrl?: string | null
   children: React.ReactNode
 }) {
   const pathname = usePathname()
@@ -38,11 +40,23 @@ export function SellerShell({
       <div className="flex min-h-screen bg-midnight pt-16">
         <aside className="hidden w-60 shrink-0 border-r border-white/5 lg:block">
           <div className="sticky top-16 flex h-[calc(100vh-4rem)] flex-col px-4 py-6">
-            <div className="mb-4 px-3">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Seller Hub</p>
-              <p className="mt-0.5 text-xs text-violet-400 font-medium">
-                {businessName ?? "Not yet a seller"}
-              </p>
+            <div className="mb-4 flex items-center gap-2.5 px-3">
+              {businessName && (
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl gradient-brand text-sm font-bold text-white">
+                  {logoUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={logoUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    businessName.charAt(0).toUpperCase()
+                  )}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Seller Hub</p>
+                <p className="mt-0.5 truncate text-xs text-violet-400 font-medium">
+                  {businessName ?? "Not yet a seller"}
+                </p>
+              </div>
             </div>
 
             {isSeller && (

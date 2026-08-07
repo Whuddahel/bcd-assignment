@@ -51,50 +51,70 @@ export function SellersClient({ sellers }: { sellers: SellerVM[] }) {
                 transition={{ duration: 0.5, delay: i * 0.06, ease: EASE }}
               >
                 <Link href={`/sellers/${seller.id}`} className="group block h-full">
-                  <div className="glass-card flex h-full flex-col rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_oklch(0_0_0/0.5)]">
-                    {/* Avatar */}
-                    <div className="mb-4 flex items-start justify-between">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl gradient-brand text-2xl font-bold text-white shadow-lg">
-                        {seller.businessName.charAt(0)}
-                      </div>
-                      {seller.verified ? (
-                        <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/30 gap-1">
-                          <CheckCircle className="h-3 w-3" /> Verified
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-white/10 text-muted-foreground text-[10px]">
-                          Pending
-                        </Badge>
+                  <div className="glass-card flex h-full flex-col overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_oklch(0_0_0/0.5)]">
+                    {/* Banner */}
+                    <div className="relative h-24 bg-gradient-to-br from-violet-600/30 via-pink-600/15 to-midnight-100">
+                      {seller.bannerUrl && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={seller.bannerUrl}
+                          alt=""
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
                       )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                     </div>
 
-                    <h2 className="text-lg font-semibold text-foreground">{seller.businessName}</h2>
-                    {seller.specialty && (
-                      <p className="mt-1 text-xs text-violet-400 font-medium">{seller.specialty}</p>
-                    )}
-                    <p className="mt-2 flex-1 text-sm text-muted-foreground leading-relaxed line-clamp-3">
-                      {seller.description}
-                    </p>
+                    <div className="flex flex-1 flex-col p-6">
+                      {/* Logo */}
+                      <div className="mb-4 flex items-start justify-between">
+                        <div className="-mt-12 flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl gradient-brand text-2xl font-bold text-white shadow-lg ring-4 ring-midnight-50">
+                          {seller.logoUrl ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src={seller.logoUrl} alt={seller.businessName} className="h-full w-full object-cover" />
+                          ) : (
+                            seller.businessName.charAt(0)
+                          )}
+                        </div>
+                        {seller.verified ? (
+                          <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/30 gap-1">
+                            <CheckCircle className="h-3 w-3" /> Verified
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-white/10 text-muted-foreground text-[10px]">
+                            Pending
+                          </Badge>
+                        )}
+                      </div>
 
-                    {/* Stats */}
-                    <div className="mt-5 grid grid-cols-3 gap-3 border-t border-white/5 pt-4">
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-0.5 text-amber-400">
-                          <Star className="h-3 w-3 fill-current" />
-                          <span className="text-sm font-bold">{seller.rating.toFixed(2)}</span>
+                      <h2 className="text-lg font-semibold text-foreground">{seller.businessName}</h2>
+                      {seller.specialty && (
+                        <p className="mt-1 text-xs text-violet-400 font-medium">{seller.specialty}</p>
+                      )}
+                      <p className="mt-2 flex-1 text-sm text-muted-foreground leading-relaxed line-clamp-3">
+                        {seller.description}
+                      </p>
+
+                      {/* Stats */}
+                      <div className="mt-5 grid grid-cols-3 gap-3 border-t border-white/5 pt-4">
+                        <div className="text-center">
+                          <div className="flex items-center justify-center gap-0.5 text-amber-400">
+                            <Star className="h-3 w-3 fill-current" />
+                            <span className="text-sm font-bold">{seller.rating.toFixed(2)}</span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">Rating</p>
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Rating</p>
-                      </div>
-                      <div className="text-center border-x border-white/5">
-                        <p className="text-sm font-bold text-foreground">{seller.reviewCount}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Reviews</p>
-                      </div>
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-0.5 text-foreground">
-                          <Package className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm font-bold">{seller.totalSales}</span>
+                        <div className="text-center border-x border-white/5">
+                          <p className="text-sm font-bold text-foreground">{seller.reviewCount}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">Reviews</p>
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Sales</p>
+                        <div className="text-center">
+                          <div className="flex items-center justify-center gap-0.5 text-foreground">
+                            <Package className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-sm font-bold">{seller.totalSales}</span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">Sales</p>
+                        </div>
                       </div>
                     </div>
                   </div>

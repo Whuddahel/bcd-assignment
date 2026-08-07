@@ -13,10 +13,10 @@ import { formatPrice } from "@/lib/utils"
 const EASE = [0.16, 1, 0.3, 1] as [number, number, number, number]
 
 const STEPS = [
-  { icon: Shield,        label: "Seller notified",       sub: "Seller has 48h to confirm",  done: true  },
-  { icon: Package,       label: "Authentication check",   sub: "Item inspected on dispatch",  done: false },
-  { icon: CheckCircle,   label: "Insured shipping",       sub: "Full-coverage tracked shipping", done: false },
-  { icon: Star,          label: "Delivered to you",       sub: "Add to your Collection",      done: false },
+  { icon: Shield,        label: "Order confirmed",       sub: "Payment received, seller notified",  done: true  },
+  { icon: Package,       label: "Seller ships it",       sub: "We'll notify you once it's on its way",  done: false },
+  { icon: CheckCircle,   label: "Buyer protection",      sub: "Refund if the item is misrepresented", done: false },
+  { icon: Star,          label: "Delivered to you",      sub: "Add to your Collection",      done: false },
 ]
 
 type OrderItem = { id: string; product_id: string; title: string; price: number; quantity: number }
@@ -85,6 +85,14 @@ function SuccessContent() {
 
   const showRealOrder = status === "found" && order
   const showConfirming = paymentIntentId && status === "loading"
+  // A real PaymentIntent whose order lookup timed out or errored — the payment
+  // went through, so never show a fabricated order number here; send them to
+  // their real order history instead.
+  const showDelayed = Boolean(paymentIntentId) && (status === "not_found" || status === "unavailable")
+  // No PaymentIntent at all: Stripe isn't configured and this is the local
+  // demo checkout path (see placeMockOrder in checkout/page.tsx) — nothing was
+  // actually purchased.
+  const showDemo = !paymentIntentId
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-midnight px-4 py-24">
@@ -152,6 +160,19 @@ function SuccessContent() {
                 Your payment went through — we&apos;re just finalizing the order record.
               </p>
             </>
+          ) : showDemo ? (
+            <>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-amber-400">
+                ✦ Checkout preview
+              </p>
+              <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
+                This is a <GradientText animated>demo</GradientText>
+              </h1>
+              <p className="mx-auto mt-4 max-w-sm text-muted-foreground">
+                Stripe isn&apos;t configured, so nothing was actually purchased. This is what
+                buyers see once checkout is live.
+              </p>
+            </>
           ) : (
             <>
               <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-emerald-400">
@@ -168,7 +189,7 @@ function SuccessContent() {
           )}
         </motion.div>
 
-        {status === "not_found" && (
+        {showDelayed && (
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -217,20 +238,18 @@ function SuccessContent() {
                 ))}
               </div>
             </>
-          ) : (
-            <div className="flex items-center justify-between">
+          ) : showDemo ? (
+            <div className="flex items-start gap-3 text-left">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
               <div>
-                <p className="text-xs text-muted-foreground">Order reference</p>
-                <p className="font-mono text-lg font-bold text-foreground uppercase">
-                  {showConfirming ? "…" : "#ORD-2024-8841"}
+                <p className="text-sm font-medium text-foreground">Demo checkout — nothing was purchased</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Stripe isn&apos;t configured in this environment, so this screen previews the
+                  checkout flow only. No order was created and no card was charged.
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Estimated delivery</p>
-                <p className="font-semibold text-foreground">5–7 business days</p>
-              </div>
             </div>
-          )}
+          ) : null}
         </motion.div>
 
         {/* Progress steps */}

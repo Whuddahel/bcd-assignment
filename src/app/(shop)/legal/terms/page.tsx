@@ -37,8 +37,8 @@ export default function TermsPage() {
             <p>Aureon is a marketplace that facilitates transactions between independent sellers and
               buyers of luxury collectibles. Aureon is not a party to any transaction between users
               and does not hold inventory.</p>
-            <p>Aureon provides authentication and provenance verification services. A "Verified"
-              status means the item has passed Aureon's authentication process at the time of
+            <p>Aureon provides authentication and provenance verification services. A &quot;Verified&quot;
+              status means the item has passed Aureon&apos;s authentication process at the time of
               listing — it is not an investment advice or value guarantee.</p>
           </Section>
 
@@ -49,11 +49,11 @@ export default function TermsPage() {
           </Section>
 
           <Section title="4. Buyers">
-            <p>When you purchase an item, you enter a binding contract with the seller. Aureon holds
-              payment in escrow and releases it to the seller only upon your confirmed receipt and
-              acceptance of the item.</p>
+            <p>When you purchase an item, you enter a binding contract with the seller. Payment is
+              processed securely through Stripe; if a refund is issued, it is returned to your
+              original payment method and any seller payout already made is reversed.</p>
             <p>You may return an item within 14 days of delivery if it is materially misrepresented
-              in the listing. "Materially misrepresented" means a significant discrepancy in
+              in the listing. &quot;Materially misrepresented&quot; means a significant discrepancy in
               condition, authenticity, or provenance — not a change of mind.</p>
           </Section>
 
@@ -64,7 +64,8 @@ export default function TermsPage() {
             <p>Sellers may not list counterfeit, stolen, or legally restricted items. Violations
               result in immediate suspension and referral to relevant authorities.</p>
             <p>Aureon charges a platform fee of 10% on each completed sale, deducted before payout.
-              Payouts are processed via Stripe Connect within 5 business days of buyer confirmation.</p>
+              Your payout is transferred to your connected Stripe account automatically as soon as
+              the sale is confirmed.</p>
           </Section>
 
           <Section title="6. Prohibited conduct">
@@ -82,7 +83,7 @@ export default function TermsPage() {
           <Section title="8. Limitation of liability">
             <p>Aureon is not liable for: the authenticity of items (beyond the authentication
               services described); seller or buyer conduct; loss of value of collectibles; or
-              indirect, incidental, or consequential damages. Aureon's total liability is capped
+              indirect, incidental, or consequential damages. Aureon&apos;s total liability is capped
               at the transaction value in question.</p>
           </Section>
 

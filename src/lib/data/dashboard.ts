@@ -1,5 +1,11 @@
 import "server-only"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { appConfig } from "@/lib/config"
+
+// Sellers are paid their subtotal minus the platform fee (see createSellerTransfers
+// in lib/stripe/fulfillment.tsx, which pays out at exactly this rate) — so every
+// seller-facing revenue figure here is net, not the raw order subtotal.
+const NET_FACTOR = (100 - appConfig.stripe.platformFeePercent) / 100
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -35,7 +41,7 @@ export async function getSellerStats(sellerId: string): Promise<SellerStats> {
   const [{ data: seller }, { count: activeListings }, { data: items }] = await Promise.all([
     supabase
       .from("seller_profiles")
-      .select("total_revenue, total_sales, rating")
+      .select("rating")
       .eq("id", sellerId)
       .maybeSingle(),
     supabase
@@ -43,21 +49,30 @@ export async function getSellerStats(sellerId: string): Promise<SellerStats> {
       .select("id", { count: "exact", head: true })
       .eq("seller_id", sellerId)
       .eq("status", "active"),
+    // seller_profiles.total_revenue is seed data only — nothing updates it after
+    // a real sale — so revenue is always computed live from orders here, and
+    // refunded/cancelled orders are excluded so a refund doesn't keep counting
+    // toward the seller's earnings.
     supabase
       .from("order_items")
-      .select("price, quantity, created_at")
+      .select("price, quantity, created_at, orders(status)")
       .eq("seller_id", sellerId),
   ])
 
-  const itemRows = (items ?? []).map((it) => ({
+  const soldItems = (items ?? []).filter((it) => {
+    const order = it.orders as unknown as { status: string } | null
+    return order && order.status !== "refunded" && order.status !== "cancelled"
+  })
+
+  const itemRows = soldItems.map((it) => ({
     created_at: it.created_at,
-    amount: it.price * it.quantity,
+    amount: Math.round(it.price * it.quantity * NET_FACTOR),
   }))
-  const revenueFromItems = itemRows.reduce((sum, r) => sum + r.amount, 0)
+  const totalRevenue = itemRows.reduce((sum, r) => sum + r.amount, 0)
 
   return {
-    totalRevenue: (seller?.total_revenue ?? revenueFromItems) / 100,
-    totalSales: seller?.total_sales ?? (items?.length ?? 0),
+    totalRevenue: totalRevenue / 100,
+    totalSales: soldItems.length,
     activeListings: activeListings ?? 0,
     averageRating: seller?.rating ?? 0,
     monthlyRevenue: monthlySeries(itemRows),

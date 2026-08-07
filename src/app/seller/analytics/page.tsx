@@ -15,7 +15,7 @@ const CATEGORY_COLORS = [
 ]
 
 export default async function SellerAnalyticsPage() {
-  const user = await requireUser(["seller", "admin"])
+  const user = await requireUser(["seller", "admin", "support"])
   const seller = await getSellerByUserId(user.id)
 
   if (!seller) {

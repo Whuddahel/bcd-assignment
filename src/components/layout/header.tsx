@@ -9,21 +9,17 @@ import {
   Bell,
   Menu,
   X,
-  Sun,
-  Moon,
   ChevronDown,
   User,
   Package,
   Heart,
   Star,
   LogOut,
-  LayoutDashboard,
   Store,
   ShieldCheck,
   HeadphonesIcon,
   Loader2,
 } from "lucide-react"
-import { useTheme } from "next-themes"
 import { AureonLogo } from "@/components/brand/aureon-logo"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -68,7 +64,7 @@ const accountMenuItems: {
   { label: "Orders",        href: "/account/orders",     icon: Package,        roles: null },
   { label: "Wishlist",      href: "/account/wishlist",   icon: Heart,          roles: null },
   { label: "Collection",    href: "/account/collection", icon: Star,           roles: null },
-  { label: "Seller Hub",    href: "/seller",             icon: Store,          roles: ["seller", "admin"] },
+  { label: "Seller Hub",    href: "/seller",             icon: Store,          roles: ["seller", "admin", "support"] },
   { label: "Admin",         href: "/admin",              icon: ShieldCheck,    roles: ["admin"] },
   { label: "Support Inbox", href: "/support",            icon: HeadphonesIcon, roles: ["support", "admin"] },
 ]
@@ -86,14 +82,13 @@ export function Header() {
   const [activeDropdown,  setActiveDropdown]  = useState<string | null>(null)
   const [accountOpen,     setAccountOpen]     = useState(false)
   const [searchOpen,      setSearchOpen]      = useState(false)
-  const { theme, setTheme }                   = useTheme()
   const [mounted,         setMounted]         = useState(false)
 
   const cartCount  = useCartStore((s) => s.totalItems())
   const openCart   = useCartStore((s) => s.openCart)
+  const clearCart  = useCartStore((s) => s.clearCart)
   const unread     = useNotificationsStore((s) => s.unreadCount())
   const toggleNotif = useNotificationsStore((s) => s.togglePanel)
-  const notifOpen  = useNotificationsStore((s) => s.isOpen)
 
   const notifRef   = useRef<HTMLDivElement>(null)
   const accountRef = useRef<HTMLDivElement>(null)
@@ -106,6 +101,9 @@ export function Header() {
   )
 
   useEffect(() => {
+    // Standard hydration-safe "mounted" flag: client-only UI (e.g. live cart
+    // count) must not render on the server, so this can't be initial state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
     const onScroll = () => setScrolled(window.scrollY > 24)
     window.addEventListener("scroll", onScroll, { passive: true })
@@ -218,19 +216,6 @@ export function Header() {
               <Search className="h-4.5 w-4.5" />
             </Button>
 
-            {/* Theme toggle
-            {mounted && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="text-muted-foreground hover:text-foreground"
-                aria-label="Toggle theme"
-              >
-                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </Button>
-            )} */}
-
             {/* Cart */}
             <Button
               variant="ghost"
@@ -334,7 +319,7 @@ export function Header() {
                         {/* Sign out */}
                         <div className="border-t border-white/5 p-1.5">
                           <button
-                            onClick={() => startSignOut(async () => { await signOut() })}
+                            onClick={() => startSignOut(async () => { clearCart(); await signOut() })}
                             disabled={signingOut}
                             className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-60"
                           >
@@ -416,7 +401,7 @@ export function Header() {
                   {user ? (
                     <Button
                       variant="outline"
-                      onClick={() => startSignOut(async () => { await signOut() })}
+                      onClick={() => startSignOut(async () => { clearCart(); await signOut() })}
                       disabled={signingOut}
                       className="gap-2"
                     >

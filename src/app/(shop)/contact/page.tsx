@@ -34,9 +34,9 @@ const CHANNELS = [
     icon: MessageSquare,
     color: "text-pink-400",
     bg: "bg-pink-500/10",
-    title: "Live Chat",
-    value: "Available Mon – Fri, 9am – 6pm CET",
-    note: "Average wait: under 2 minutes",
+    title: "Support Tickets",
+    value: "Sign in and message us anytime",
+    note: "Track replies from your account",
   },
   {
     icon: Clock,
@@ -44,7 +44,7 @@ const CHANNELS = [
     bg: "bg-amber-500/10",
     title: "Business Hours",
     value: "Mon – Fri · 9:00 – 18:00 CET",
-    note: "Urgent disputes handled 24/7",
+    note: "Support tickets are reviewed in order received",
   },
 ]
 
@@ -65,6 +65,8 @@ export default function ContactPage() {
   const isSignedIn = Boolean(user)
   useEffect(() => {
     if (!user) return
+    // Prefill from the session once it loads — not available at initial state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm((prev) => ({ ...prev, name: user.fullName ?? prev.name, email: user.email }))
   }, [user])
 
@@ -107,7 +109,7 @@ export default function ContactPage() {
             <GradientText>Contact</GradientText> Us
           </h1>
           <p className="mt-4 max-w-xl text-muted-foreground">
-            Questions about an item, a seller dispute, or authentication process? We're here to help.
+            Questions about an item, a seller dispute, or authentication process? We&apos;re here to help.
           </p>
         </div>
       </div>
@@ -123,7 +125,7 @@ export default function ContactPage() {
                 </div>
                 <h2 className="font-display text-2xl font-bold text-foreground">Message sent!</h2>
                 <p className="mt-3 text-muted-foreground">
-                  We've received your message and will reply to{" "}
+                  We&apos;ve received your message and will reply to{" "}
                   <span className="font-medium text-foreground">{form.email}</span> within 4 hours.
                 </p>
                 <Button

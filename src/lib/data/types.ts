@@ -30,12 +30,13 @@ export type ProductVM = {
   sellerId: string
   sellerName: string
   sellerVerified: boolean
+  sellerLogo?: string
   categorySlug: string
   categoryName: string
   price: number // whole dollars (converted from cents)
   originalPrice?: number
   condition: ProductCondition
-  status: "active" | "sold" | "draft"
+  status: "active" | "sold" | "draft" | "pending_review" | "archived"
   rarity?: string
   badge?: string
   gradient: string
@@ -138,15 +139,13 @@ function normalizeAttributes(raw: unknown): Record<string, string> {
 }
 
 function mapStatus(status: Product["status"]): ProductVM["status"] {
-  if (status === "sold") return "sold"
-  if (status === "active") return "active"
-  return "draft"
+  return status
 }
 
 // The DB row shape a product query is expected to return (with relations).
 export type ProductRow = Product & {
   product_images?: Pick<ProductImage, "url" | "sort_order" | "is_primary">[] | null
-  seller_profiles?: Pick<SellerProfile, "business_name" | "verified"> | null
+  seller_profiles?: Pick<SellerProfile, "business_name" | "verified" | "logo_url"> | null
   categories?: Pick<Category, "name" | "slug"> | null
 }
 
@@ -164,6 +163,7 @@ export function mapProduct(row: ProductRow): ProductVM {
     sellerId: row.seller_id,
     sellerName: row.seller_profiles?.business_name ?? "Aureon Seller",
     sellerVerified: row.seller_profiles?.verified ?? false,
+    sellerLogo: row.seller_profiles?.logo_url ?? undefined,
     categorySlug,
     categoryName: row.categories?.name ?? "Collectibles",
     price: row.price / 100,

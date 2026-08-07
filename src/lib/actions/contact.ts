@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { getSessionUser } from "@/lib/auth/session"
 import { sendEmail } from "@/lib/email/client"
+import { notify, getStaffUserIds } from "@/lib/data/notifications"
 
 export type ContactResult = { ok: true; message: string } | { ok: false; error: string }
 
@@ -48,6 +49,18 @@ export async function submitContactMessage(input: ContactInput): Promise<Contact
       body: d.message,
       is_internal: false,
     })
+
+    await notify(
+      (await getStaffUserIds(["support", "admin"]))
+        .filter((id) => id !== user.id)
+        .map((id) => ({
+          userId: id,
+          type: "new_message" as const,
+          title: `New support ticket: ${d.subject}`,
+          body: d.message.length > 90 ? `${d.message.slice(0, 90)}…` : d.message,
+          href: `/support/tickets/${ticket.id}`,
+        })),
+    )
 
     revalidatePath("/support")
     return { ok: true, message: "Thanks — we've opened a support ticket and will reply shortly." }

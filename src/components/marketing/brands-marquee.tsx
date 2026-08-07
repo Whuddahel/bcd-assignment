@@ -1,24 +1,5 @@
 import { cn } from "@/lib/utils"
 
-const brands = [
-  "Patek Philippe",
-  "Rolex",
-  "Hermès",
-  "Cartier",
-  "Audemars Piguet",
-  "Richard Mille",
-  "Louis Vuitton",
-  "Chanel",
-  "Sotheby's",
-  "Christie's",
-  "Basquiat",
-  "Kaws",
-  "Banksy",
-  "Damien Hirst",
-  "Omega",
-  "IWC",
-]
-
 function BrandItem({ name }: { name: string }) {
   return (
     <div className="mx-10 flex shrink-0 items-center">
@@ -30,10 +11,16 @@ function BrandItem({ name }: { name: string }) {
 }
 
 interface BrandsMarqueeProps {
+  /** Brand names taken from the attributes sellers set on their live listings. */
+  brands: string[]
   className?: string
 }
 
-export function BrandsMarquee({ className }: BrandsMarqueeProps) {
+export function BrandsMarquee({ brands, className }: BrandsMarqueeProps) {
+  // A marquee of two names reads as a mistake — show it only once the catalogue
+  // has enough breadth to scroll.
+  if (brands.length < 4) return null
+
   const doubled = [...brands, ...brands]
 
   return (

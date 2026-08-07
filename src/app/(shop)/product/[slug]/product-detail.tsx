@@ -225,8 +225,13 @@ export function ProductDetail({
           >
             {/* Seller */}
             <Link href={`/sellers/${product.sellerId}`} className="group mb-4 flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl gradient-brand text-sm font-bold text-white">
-                {product.sellerName.charAt(0)}
+              <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl gradient-brand text-sm font-bold text-white">
+                {product.sellerLogo ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={product.sellerLogo} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  product.sellerName.charAt(0)
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-1.5 text-sm font-medium text-foreground group-hover:text-violet-400 transition-colors">
@@ -289,11 +294,11 @@ export function ProductDetail({
               <Button
                 size="lg"
                 onClick={handleAddToCart}
-                disabled={product.status === "sold"}
+                disabled={product.status !== "active"}
                 className="gradient-brand btn-glow flex-1 gap-2 border-0 text-white hover:opacity-90 disabled:opacity-50"
               >
                 <ShoppingCart className="h-4.5 w-4.5" />
-                {product.status === "sold" ? "Sold" : "Add to Cart"}
+                {product.status === "sold" ? "Sold" : product.status === "active" ? "Add to Cart" : "Not yet available"}
               </Button>
               <Button
                 size="lg"
@@ -313,8 +318,8 @@ export function ProductDetail({
             {/* Trust badges */}
             <div className="mt-6 grid grid-cols-3 gap-3">
               {[
-                { icon: Shield, label: "Authenticated", sub: "Every item verified" },
-                { icon: Package, label: "Insured shipping", sub: "Full coverage" },
+                { icon: Shield, label: "Reviewed listing", sub: "Vetted before it went live" },
+                { icon: Package, label: "Secure checkout", sub: "Payments powered by Stripe" },
                 { icon: Clock,   label: "14-day returns", sub: "If not as described" },
               ].map(({ icon: Icon, label, sub }) => (
                 <div key={label} className="glass-card rounded-xl p-3 text-center">

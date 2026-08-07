@@ -2,9 +2,15 @@ import { Package, DollarSign, Clock, CheckCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { GradientText } from "@/components/brand/gradient-text"
 import { RefundButton } from "@/components/orders/refund-button"
+import { MarkShippedButton } from "@/components/orders/mark-shipped-button"
 import { requireUser } from "@/lib/auth/session"
 import { createSupabaseServerAdminClient } from "@/lib/supabase/server"
 import { formatPrice } from "@/lib/utils"
+import { appConfig } from "@/lib/config"
+
+// Sellers are paid subtotal minus the platform fee (see createSellerTransfers in
+// lib/stripe/fulfillment.tsx) — "Total earned" below is net, not the raw line total.
+const NET_FACTOR = (100 - appConfig.stripe.platformFeePercent) / 100
 
 const statusStyle: Record<string, string> = {
   delivered: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -59,7 +65,7 @@ async function getSellerOrders(userId: string): Promise<SellerOrderRow[] | null>
 }
 
 export default async function SellerOrdersPage() {
-  const user = await requireUser(["seller", "admin"])
+  const user = await requireUser(["seller", "admin", "support"])
   const rows = await getSellerOrders(user.id)
 
   if (!rows) {
@@ -73,9 +79,11 @@ export default async function SellerOrdersPage() {
     )
   }
 
-  const totalEarned = rows
-    .filter((r) => r.status !== "refunded")
-    .reduce((s, r) => s + r.lineTotal, 0)
+  const totalEarned = Math.round(
+    rows
+      .filter((r) => r.status !== "refunded" && r.status !== "cancelled")
+      .reduce((s, r) => s + r.lineTotal, 0) * NET_FACTOR,
+  )
   const needsAction = rows.filter((r) => ["pending", "confirmed"].includes(r.status)).length
   const delivered = rows.filter((r) => r.status === "delivered").length
 
@@ -87,7 +95,7 @@ export default async function SellerOrdersPage() {
         <div className="glass-card rounded-xl p-4">
           <DollarSign className="h-4 w-4 text-violet-400" />
           <p className="mt-2 text-xl font-bold text-foreground">{formatPrice(totalEarned / 100)}</p>
-          <p className="text-[11px] text-muted-foreground">Total earned</p>
+          <p className="text-[11px] text-muted-foreground">Total earned (after fees)</p>
         </div>
         <div className="glass-card rounded-xl p-4">
           <Clock className={`h-4 w-4 ${needsAction > 0 ? "text-amber-400" : "text-muted-foreground"}`} />
@@ -141,7 +149,10 @@ export default async function SellerOrdersPage() {
                     {row.status}
                   </Badge>
                 </div>
-                <RefundButton orderId={row.orderId} disabled={row.status === "refunded"} />
+                <div className="flex items-center gap-1.5">
+                  {row.status === "confirmed" && <MarkShippedButton orderId={row.orderId} />}
+                  <RefundButton orderId={row.orderId} disabled={row.status === "refunded"} />
+                </div>
               </div>
             ))}
           </div>

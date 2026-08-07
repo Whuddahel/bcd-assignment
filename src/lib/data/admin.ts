@@ -1,10 +1,10 @@
 import "server-only"
-import { createSupabaseServerClient } from "@/lib/supabase/server"
+import { createSupabaseServerClient, createSupabaseServerAdminClient } from "@/lib/supabase/server"
 import { mapProduct, type ProductVM, type ProductRow } from "./types"
 import type { UserRole } from "@/types/database"
 
 const PRODUCT_SELECT =
-  "*, product_images(url,sort_order,is_primary), seller_profiles(business_name,verified), categories(name,slug)"
+  "*, product_images(url,sort_order,is_primary), seller_profiles(business_name,verified,logo_url), categories(name,slug)"
 
 /** All products regardless of status (admin/support only — RLS enforces this). */
 export async function getAllProductsAdmin(): Promise<ProductVM[]> {
@@ -30,6 +30,7 @@ export type AdminUser = {
   isSeller: boolean
   businessName?: string
   verified?: boolean
+  banned: boolean
 }
 
 /** All profiles with seller info joined (admin only). */
@@ -43,6 +44,20 @@ export async function getAllProfiles(): Promise<AdminUser[]> {
   if (error || !data) {
     if (error) console.error("getAllProfiles error:", error.message)
     return []
+  }
+
+  // Ban status lives on auth.users (GoTrue), not the profiles table — see
+  // adminSetUserBanned in lib/actions/admin.ts, which sets it via ban_duration.
+  const bannedIds = new Set<string>()
+  try {
+    const admin = await createSupabaseServerAdminClient()
+    const { data: authUsers } = await admin.auth.admin.listUsers({ perPage: 1000 })
+    for (const u of authUsers?.users ?? []) {
+      const bannedUntil = (u as unknown as { banned_until?: string | null }).banned_until
+      if (bannedUntil && new Date(bannedUntil) > new Date()) bannedIds.add(u.id)
+    }
+  } catch (err) {
+    console.error("getAllProfiles: failed to load ban status", err)
   }
 
   return (data as unknown as {
@@ -63,6 +78,7 @@ export async function getAllProfiles(): Promise<AdminUser[]> {
       isSeller: Boolean(seller),
       businessName: seller?.business_name,
       verified: seller?.verified,
+      banned: bannedIds.has(p.id),
     }
   })
 }

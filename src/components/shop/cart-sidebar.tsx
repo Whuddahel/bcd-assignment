@@ -176,7 +176,7 @@ export function CartSidebar() {
                 {/* Trust */}
                 <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
                   <Shield className="h-3.5 w-3.5 text-violet-400" />
-                  Secured & authenticated — every item verified
+                  Secured checkout — every listing reviewed before it goes live
                 </div>
               </div>
             )}

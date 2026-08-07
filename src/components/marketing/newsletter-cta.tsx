@@ -11,7 +11,7 @@ import { NoiseOverlay } from "@/components/brand/noise-overlay"
 import { subscribeNewsletter } from "@/lib/actions/newsletter"
 import { toast } from "sonner"
 
-export function NewsletterCTA() {
+export function NewsletterCTA({ subscriberCount = 0 }: { subscriberCount?: number }) {
   const [email, setEmail] = useState("")
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -55,8 +55,11 @@ export function NewsletterCTA() {
             to Rare Drops
           </h2>
           <p className="mx-auto mt-5 max-w-lg text-lg text-muted-foreground">
-            Join 12,000+ collectors receiving curated drop alerts, market reports, and
-            exclusive pre-sale access — before anyone else.
+            {subscriberCount > 0
+              ? `Join ${subscriberCount.toLocaleString()} ${subscriberCount === 1 ? "collector" : "collectors"} receiving`
+              : "Be first in line for"}{" "}
+            curated drop alerts, market reports, and exclusive pre-sale access — before
+            anyone else.
           </p>
 
           {submitted ? (

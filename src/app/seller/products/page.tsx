@@ -12,7 +12,7 @@ import { ProductsClient } from "./products-client"
 export const metadata: Metadata = { title: "My Listings" }
 
 export default async function SellerProductsPage() {
-  const user = await requireUser(["seller", "admin"])
+  const user = await requireUser(["seller", "admin", "support"])
   const seller = await getSellerByUserId(user.id)
 
   if (!seller) {

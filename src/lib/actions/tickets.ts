@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { getSessionUser } from "@/lib/auth/session"
+import { notify, getStaffUserIds } from "@/lib/data/notifications"
 import type { TicketStatus } from "@/types/database"
 
 export type ActionResult =
@@ -43,6 +44,18 @@ export async function createTicket(input: z.input<typeof createSchema>): Promise
     is_internal: false,
   })
 
+  await notify(
+    (await getStaffUserIds(["support", "admin"]))
+      .filter((id) => id !== user.id)
+      .map((id) => ({
+        userId: id,
+        type: "new_message" as const,
+        title: `New support ticket: ${parsed.data.subject}`,
+        body: parsed.data.body.length > 90 ? `${parsed.data.body.slice(0, 90)}…` : parsed.data.body,
+        href: `/support/tickets/${ticket.id}`,
+      })),
+  )
+
   revalidatePath("/support")
   return { ok: true, message: "Ticket opened.", ticketId: ticket.id }
 }
@@ -81,9 +94,65 @@ export async function replyToTicket(input: z.input<typeof replySchema>): Promise
     .update({ updated_at: new Date().toISOString() })
     .eq("id", parsed.data.ticketId)
 
+  // Internal notes are staff-only scratch space — nobody gets pinged for them.
+  if (!isInternal) {
+    await notifyTicketReply(parsed.data.ticketId, user.id, isStaff, parsed.data.body)
+  }
+
   revalidatePath(`/support/tickets/${parsed.data.ticketId}`)
   revalidatePath("/support")
   return { ok: true, message: "Reply sent." }
+}
+
+/**
+ * Ping whoever is waiting on the other end of the thread: the customer when
+ * staff replies, and the assigned agent (or the whole support desk, while the
+ * ticket is unassigned) when the customer does.
+ */
+async function notifyTicketReply(
+  ticketId: string,
+  senderId: string,
+  senderIsStaff: boolean,
+  body: string,
+) {
+  const supabase = await createSupabaseServerClient()
+  const { data: ticket } = await supabase
+    .from("support_tickets")
+    .select("id, subject, user_id, assigned_to")
+    .eq("id", ticketId)
+    .maybeSingle()
+
+  if (!ticket) return
+
+  const preview = body.length > 90 ? `${body.slice(0, 90)}…` : body
+
+  if (senderIsStaff) {
+    if (ticket.user_id === senderId) return
+    await notify({
+      userId: ticket.user_id,
+      type: "new_message",
+      title: `Support replied: ${ticket.subject}`,
+      body: preview,
+      href: `/account/support/${ticket.id}`,
+    })
+    return
+  }
+
+  const recipients = ticket.assigned_to
+    ? [ticket.assigned_to]
+    : await getStaffUserIds(["support", "admin"])
+
+  await notify(
+    recipients
+      .filter((id) => id !== senderId)
+      .map((id) => ({
+        userId: id,
+        type: "new_message" as const,
+        title: `New reply on: ${ticket.subject}`,
+        body: preview,
+        href: `/support/tickets/${ticket.id}`,
+      })),
+  )
 }
 
 // ── Staff: change ticket status ───────────────────────────────────────────────
@@ -98,12 +167,37 @@ export async function updateTicketStatus(
   }
 
   const supabase = await createSupabaseServerClient()
+
+  const { data: ticket } = await supabase
+    .from("support_tickets")
+    .select("id, subject, user_id, assigned_to")
+    .eq("id", ticketId)
+    .maybeSingle()
+  if (!ticket) return { ok: false, error: "Ticket not found." }
+
+  // Claim the ticket if nobody's on it yet; don't silently steal it from
+  // whoever is already handling it just because a second agent touched it.
   const { error } = await supabase
     .from("support_tickets")
-    .update({ status, assigned_to: user.id })
+    .update({ status, assigned_to: ticket.assigned_to ?? user.id })
     .eq("id", ticketId)
 
   if (error) return { ok: false, error: error.message }
+
+  // Resolving/closing without a reply (e.g. "resolved, no action needed")
+  // otherwise leaves the customer with no signal their ticket moved at all.
+  if ((status === "resolved" || status === "closed") && ticket.user_id !== user.id) {
+    await notify({
+      userId: ticket.user_id,
+      type: "new_message",
+      title: `Ticket ${status}: ${ticket.subject}`,
+      body: status === "resolved"
+        ? "Support marked your ticket as resolved. Reply if you still need help."
+        : "Your support ticket has been closed.",
+      href: `/account/support/${ticket.id}`,
+    })
+  }
+
   revalidatePath(`/support/tickets/${ticketId}`)
   revalidatePath("/support")
   return { ok: true, message: "Status updated." }

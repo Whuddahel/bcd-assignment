@@ -5,6 +5,7 @@ import { getStripe } from "@/lib/stripe/server"
 import { appConfig } from "@/lib/config"
 import { createSupabaseServerAdminClient } from "@/lib/supabase/server"
 import { getProductsForCheckout } from "@/lib/data/products"
+import { notify, getSellerOwnerIds } from "@/lib/data/notifications"
 import { sendEmail } from "@/lib/email/client"
 import OrderConfirmationEmail from "@/emails/order-confirmation"
 import { env } from "@/lib/env"
@@ -98,6 +99,62 @@ export async function fulfilPaymentIntent(
 
   if (existing) return existing
 
+  // Claim every item atomically BEFORE creating the order. Each listing is
+  // one-of-a-kind — two buyers can both have it in cart and both pay, since
+  // Stripe doesn't know about our inventory — so this conditional UPDATE
+  // (`eq("status", "active")`) is the actual point of truth for "did I win the
+  // item," not the `products.status !== "active"` check at PaymentIntent
+  // creation time (api/checkout/route.ts), which only blocks the obvious case
+  // and can't see a concurrent payment that's already in flight.
+  const { data: claimed } = await supabase
+    .from("products")
+    .update({ status: "sold" })
+    .in("id", lineItems.map((item) => item.productId))
+    .eq("status", "active")
+    .select("id")
+
+  const claimedIds = new Set((claimed ?? []).map((p) => p.id))
+  const lostItems = lineItems.filter((item) => !claimedIds.has(item.productId))
+
+  if (lostItems.length > 0) {
+    // Before concluding we lost to another buyer: this could just be the
+    // *same* PaymentIntent's own concurrent fulfilment call (the webhook and
+    // the checkout success page both call fulfilPaymentIntent, and can race
+    // each other) — in which case the other call already claimed these exact
+    // items for this same order and already created it. That's success, not
+    // a lost race; re-check before refunding a buyer's legitimate purchase.
+    const { data: raced } = await supabase
+      .from("orders")
+      .select("id, total_amount")
+      .eq("stripe_payment_intent_id", paymentIntent.id)
+      .maybeSingle()
+    if (raced) return raced
+
+    // Release whatever we did manage to claim — we're not fulfilling a partial
+    // order for a one-of-a-kind marketplace, so this payment can't go through.
+    if (claimedIds.size > 0) {
+      await supabase.from("products").update({ status: "active" }).in("id", [...claimedIds])
+    }
+
+    const stripe = getStripe()
+    try {
+      await stripe.refunds.create({ payment_intent: paymentIntent.id })
+    } catch (err) {
+      console.error(`fulfilment: failed to auto-refund lost race for ${paymentIntent.id}`, err)
+    }
+
+    await notify({
+      userId: buyerId,
+      type: "payment_failed",
+      title: "An item in your order sold out",
+      body: `${lostItems.map((i) => i.title).join(", ")} sold to another buyer moments before your payment cleared. You've been refunded in full.`,
+      href: "/browse",
+    })
+
+    console.warn(`fulfilment: lost race on ${lostItems.length} item(s) for intent ${paymentIntent.id}, refunded`)
+    return null
+  }
+
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .insert({
@@ -136,18 +193,53 @@ export async function fulfilPaymentIntent(
   )
   if (itemsError) console.error("fulfilment: failed to create order_items", itemsError)
 
-  // Each listing is a one-of-a-kind item — no stock/quantity concept — so a
-  // successful purchase takes it off the market immediately.
-  const { error: soldError } = await supabase
-    .from("products")
-    .update({ status: "sold" })
-    .in("id", lineItems.map((item) => item.productId))
-  if (soldError) console.error("fulfilment: failed to mark products sold", soldError)
-
   await createSellerTransfers(paymentIntent, lineItems)
   await sendOrderConfirmation(buyerId, order.id, order.total_amount, lineItems)
+  await notifyOrderPlaced(buyerId, order.id, order.total_amount, lineItems)
 
   return order
+}
+
+/** In-app notifications for both sides of a completed purchase. */
+async function notifyOrderPlaced(
+  buyerId: string,
+  orderId: string,
+  totalAmountCents: number,
+  lineItems: FulfilLineItem[],
+) {
+  const shortId = orderId.slice(0, 8).toUpperCase()
+  const itemSummary =
+    lineItems.length === 1
+      ? lineItems[0].title
+      : `${lineItems[0].title} + ${lineItems.length - 1} more`
+
+  const owners = await getSellerOwnerIds(lineItems.map((i) => i.sellerId))
+
+  await notify([
+    {
+      userId: buyerId,
+      type: "order_confirmed",
+      title: `Order #${shortId} confirmed`,
+      body: `${itemSummary} · $${(totalAmountCents / 100).toFixed(2)}. We'll let you know when it ships.`,
+      href: "/account/orders",
+    },
+    ...[...new Set(lineItems.map((i) => i.sellerId))].flatMap((sellerId) => {
+      const ownerId = owners.get(sellerId)
+      if (!ownerId) return []
+
+      const sold = lineItems.filter((i) => i.sellerId === sellerId)
+      const revenue = sold.reduce((sum, i) => sum + i.price * i.qty, 0)
+      return [
+        {
+          userId: ownerId,
+          type: "new_sale" as const,
+          title: sold.length === 1 ? `${sold[0].title} sold` : `${sold.length} items sold`,
+          body: `Order #${shortId} · $${revenue.toFixed(2)}. Ship it to keep the buyer in the loop.`,
+          href: "/seller/orders",
+        },
+      ]
+    }),
+  ])
 }
 
 /** Retrieve a PaymentIntent from Stripe and fulfil it if it has succeeded. */

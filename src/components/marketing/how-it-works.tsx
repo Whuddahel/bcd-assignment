@@ -109,19 +109,16 @@ export function HowItWorks() {
 
                     {step.blockchainNote && (
                       <div className="mt-4 border-t border-white/5 pt-4">
-                        {/* BLOCKCHAIN: In Phase 2, this section will display the on-chain
-                            provenance_record hash and a link to view the full ownership
-                            chain on-chain. Replace this badge with the BlockchainProvenanceCard
-                            component once smart contracts are deployed. */}
                         <Badge
                           variant="outline"
                           className="gap-1.5 border-violet-500/30 bg-violet-500/10 text-violet-300"
                         >
                           <span className="text-violet-400">⬡</span>
-                          Powered by blockchain — coming soon
+                          Powered by blockchain
                         </Badge>
                         <p className="mt-2 text-xs text-muted-foreground/60">
-                          On-chain provenance certificates launching in Phase 2
+                          Authenticated items carry an on-chain certificate, and every change
+                          of ownership is recorded on the item&apos;s provenance page.
                         </p>
                       </div>
                     )}

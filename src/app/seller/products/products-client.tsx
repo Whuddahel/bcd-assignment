@@ -13,14 +13,32 @@ import { MintButton } from "@/components/blockchain/mint-button"
 import { formatPrice } from "@/lib/utils"
 import { toast } from "sonner"
 
-type StatusTab = "all" | "active" | "draft" | "sold"
+type StatusTab = "all" | "active" | "pending_review" | "draft" | "archived" | "sold"
 
 const STATUS_TABS: { value: StatusTab; label: string }[] = [
-  { value: "all",    label: "All Listings" },
-  { value: "active", label: "Active"       },
-  { value: "draft",  label: "Draft"        },
-  { value: "sold",   label: "Sold"         },
+  { value: "all",            label: "All Listings"   },
+  { value: "active",         label: "Active"         },
+  { value: "pending_review", label: "Pending Review" },
+  { value: "draft",          label: "Draft"          },
+  { value: "archived",       label: "Rejected"       },
+  { value: "sold",           label: "Sold"           },
 ]
+
+const statusBadgeClass: Record<string, string> = {
+  active:         "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
+  sold:           "border-sky-500/20 bg-sky-500/10 text-sky-400",
+  pending_review: "border-amber-500/20 bg-amber-500/10 text-amber-400",
+  draft:          "border-white/10 bg-white/5 text-muted-foreground",
+  archived:       "border-red-500/20 bg-red-500/10 text-red-400",
+}
+
+const statusLabel: Record<string, string> = {
+  active:         "Active",
+  sold:           "Sold",
+  pending_review: "Pending review",
+  draft:          "Draft",
+  archived:       "Rejected",
+}
 
 export function ProductsClient({
   initialProducts,
@@ -40,10 +58,12 @@ export function ProductsClient({
   const totalWishlists = products.reduce((s, p) => s + p.wishlistCount, 0)
 
   const counts: Record<StatusTab, number> = {
-    all:    products.length,
-    active: products.filter((p) => p.status === "active").length,
-    draft:  products.filter((p) => p.status === "draft").length,
-    sold:   products.filter((p) => p.status === "sold").length,
+    all:            products.length,
+    active:         products.filter((p) => p.status === "active").length,
+    pending_review: products.filter((p) => p.status === "pending_review").length,
+    draft:          products.filter((p) => p.status === "draft").length,
+    archived:       products.filter((p) => p.status === "archived").length,
+    sold:           products.filter((p) => p.status === "sold").length,
   }
 
   async function handleDelete(id: string, title: string) {
@@ -154,15 +174,9 @@ export function ProductsClient({
                     <div className="mt-0.5 flex items-center gap-2">
                       <Badge
                         variant="outline"
-                        className={`text-[10px] capitalize ${
-                          p.status === "active"
-                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                            : p.status === "sold"
-                            ? "border-sky-500/20 bg-sky-500/10 text-sky-400"
-                            : "border-amber-500/20 bg-amber-500/10 text-amber-400"
-                        }`}
+                        className={`text-[10px] ${statusBadgeClass[p.status] ?? ""}`}
                       >
-                        {p.status}
+                        {statusLabel[p.status] ?? p.status}
                       </Badge>
                       <span className="text-[10px] text-muted-foreground capitalize">
                         {p.condition.replace("_", " ")}

@@ -3,27 +3,50 @@
 import { useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
-import { Bell, Package, Truck, Tag, CheckCircle, MessageSquare, X, Check } from "lucide-react"
+import {
+  Bell, Package, Truck, CheckCircle, MessageSquare, X, Check,
+  ShoppingBag, BadgeCheck, Store, Undo2, Ban, AlertTriangle,
+} from "lucide-react"
 import { useNotificationsStore } from "@/stores/notifications-store"
 import { relativeTime, cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
+// Keep in step with NotificationKind in lib/data/notifications.ts.
 const typeIcon: Record<string, React.ElementType> = {
-  order_shipped:   Truck,
-  order_delivered: Package,
-  price_drop:      Tag,
-  seller_approved: CheckCircle,
-  review_reply:    MessageSquare,
-  new_message:     MessageSquare,
+  order_confirmed:    ShoppingBag,
+  order_shipped:      Truck,
+  order_delivered:    Package,
+  order_refunded:     Undo2,
+  payment_failed:     AlertTriangle,
+  new_sale:           ShoppingBag,
+  seller_approved:    CheckCircle,
+  seller_application: Store,
+  listing_approved:   BadgeCheck,
+  listing_rejected:   Ban,
+  new_message:        MessageSquare,
 }
 
 const typeColor: Record<string, string> = {
-  order_shipped:   "text-sky-400 bg-sky-500/10",
-  order_delivered: "text-emerald-400 bg-emerald-500/10",
-  price_drop:      "text-amber-400 bg-amber-500/10",
-  seller_approved: "text-violet-400 bg-violet-500/10",
-  review_reply:    "text-pink-400 bg-pink-500/10",
-  new_message:     "text-pink-400 bg-pink-500/10",
+  order_confirmed:    "text-violet-400 bg-violet-500/10",
+  order_shipped:      "text-sky-400 bg-sky-500/10",
+  order_delivered:    "text-emerald-400 bg-emerald-500/10",
+  order_refunded:     "text-red-400 bg-red-500/10",
+  payment_failed:     "text-red-400 bg-red-500/10",
+  new_sale:           "text-emerald-400 bg-emerald-500/10",
+  seller_approved:    "text-violet-400 bg-violet-500/10",
+  seller_application: "text-amber-400 bg-amber-500/10",
+  listing_approved:   "text-emerald-400 bg-emerald-500/10",
+  listing_rejected:   "text-red-400 bg-red-500/10",
+  new_message:        "text-pink-400 bg-pink-500/10",
+}
+
+/** Persist read state; the store has already updated optimistically. */
+function persistRead(ids?: string[]) {
+  fetch("/api/notifications", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(ids ? { ids } : {}),
+  }).catch(() => {})
 }
 
 export function NotificationsDropdown() {
@@ -31,7 +54,9 @@ export function NotificationsDropdown() {
     useNotificationsStore()
   const panelRef = useRef<HTMLDivElement>(null)
 
-  // Hydrate from the database once on mount.
+  // Hydrate on mount, and again whenever the panel is opened — events land in
+  // the inbox server-side (an order shipping, a support reply), so a long-lived
+  // tab would otherwise keep showing a stale list.
   useEffect(() => {
     let active = true
     fetch("/api/notifications", { cache: "no-store" })
@@ -43,7 +68,17 @@ export function NotificationsDropdown() {
     return () => {
       active = false
     }
-  }, [setNotifications])
+  }, [setNotifications, isOpen])
+
+  function handleMarkRead(id: string) {
+    markRead(id)
+    persistRead([id])
+  }
+
+  function handleMarkAllRead() {
+    markAllRead()
+    persistRead()
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -90,7 +125,7 @@ export function NotificationsDropdown() {
                     variant="ghost"
                     size="sm"
                     className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={markAllRead}
+                    onClick={handleMarkAllRead}
                   >
                     <Check className="h-3 w-3" />
                     Mark all read
@@ -121,7 +156,7 @@ export function NotificationsDropdown() {
                       key={n.id}
                       href={n.href ?? "#"}
                       onClick={() => {
-                        markRead(n.id)
+                        handleMarkRead(n.id)
                         closePanel()
                       }}
                       className={cn(

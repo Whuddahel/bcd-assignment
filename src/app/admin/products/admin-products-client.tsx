@@ -16,21 +16,31 @@ import { toast } from "sonner"
 
 export type BlockchainState = { tokenId: string | null; attested: boolean }
 
-type TabKey = "all" | "active" | "pending" | "draft" | "sold"
+type TabKey = "all" | "active" | "pending_review" | "draft" | "archived" | "sold"
 
 const TABS: { value: TabKey; label: string }[] = [
-  { value: "all",     label: "All"            },
-  { value: "active",  label: "Active"         },
-  { value: "pending", label: "Pending Review" },
-  { value: "draft",   label: "Draft"          },
-  { value: "sold",    label: "Sold"           },
+  { value: "all",            label: "All"            },
+  { value: "active",         label: "Active"         },
+  { value: "pending_review", label: "Pending Review" },
+  { value: "draft",          label: "Draft"          },
+  { value: "archived",       label: "Rejected"       },
+  { value: "sold",           label: "Sold"           },
 ]
 
 const statusStyle: Record<string, string> = {
-  active:  "border-emerald-500/20 text-emerald-400",
-  pending: "border-amber-500/20 text-amber-400",
-  draft:   "border-white/10 text-muted-foreground",
-  sold:    "border-sky-500/20 text-sky-400",
+  active:         "border-emerald-500/20 text-emerald-400",
+  pending_review: "border-amber-500/20 text-amber-400",
+  draft:          "border-white/10 text-muted-foreground",
+  archived:       "border-red-500/20 text-red-400",
+  sold:           "border-sky-500/20 text-sky-400",
+}
+
+const statusLabel: Record<string, string> = {
+  active:         "Active",
+  pending_review: "Pending review",
+  draft:          "Draft",
+  archived:       "Rejected",
+  sold:           "Sold",
 }
 
 export function AdminProductsClient({
@@ -55,7 +65,7 @@ export function AdminProductsClient({
       return
     }
     setItems((cur) =>
-      cur.map((it) => (it.id === p.id ? { ...it, status: action === "approve" ? "active" : "draft" } : it)),
+      cur.map((it) => (it.id === p.id ? { ...it, status: action === "approve" ? "active" : "archived" } : it)),
     )
     toast[action === "approve" ? "success" : "error"](
       `${action === "approve" ? "Approved" : "Rejected"}: ${p.title}`,
@@ -72,13 +82,12 @@ export function AdminProductsClient({
   })
 
   const counts: Record<TabKey, number> = {
-    all:     items.length,
-    active:  items.filter((p) => p.status === "active").length,
-    // pending_review products are surfaced as "draft" by the view-model, so the
-    // Pending Review tab has no distinct source and stays at 0.
-    pending: 0,
-    draft:   items.filter((p) => p.status === "draft").length,
-    sold:    items.filter((p) => p.status === "sold").length,
+    all:            items.length,
+    active:         items.filter((p) => p.status === "active").length,
+    pending_review: items.filter((p) => p.status === "pending_review").length,
+    draft:          items.filter((p) => p.status === "draft").length,
+    archived:       items.filter((p) => p.status === "archived").length,
+    sold:           items.filter((p) => p.status === "sold").length,
   }
 
   return (
@@ -98,7 +107,7 @@ export function AdminProductsClient({
         {[
           { label: "Total listings",   value: counts.all,     icon: Package,      color: "text-violet-400"  },
           { label: "Active",           value: counts.active,  icon: TrendingUp,   color: "text-emerald-400" },
-          { label: "Pending review",   value: counts.pending, icon: AlertCircle,  color: "text-amber-400"   },
+          { label: "Pending review",   value: counts.pending_review, icon: AlertCircle,  color: "text-amber-400"   },
           { label: "Sold",             value: counts.sold,    icon: CheckCircle,  color: "text-sky-400"     },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="glass-card rounded-xl p-4">
@@ -184,9 +193,9 @@ export function AdminProductsClient({
                       </Badge>
                       <Badge
                         variant="outline"
-                        className={`text-[10px] capitalize ${statusStyle[p.status]}`}
+                        className={`text-[10px] ${statusStyle[p.status]}`}
                       >
-                        {p.status}
+                        {statusLabel[p.status] ?? p.status}
                       </Badge>
                     </div>
                   </div>

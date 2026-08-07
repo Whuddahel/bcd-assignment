@@ -3,44 +3,18 @@
 import { motion } from "framer-motion"
 import { Star } from "lucide-react"
 import { GradientText } from "@/components/brand/gradient-text"
+import type { HomeTestimonial } from "@/lib/data/home"
 
-const testimonials = [
-  {
-    id: "1",
-    name: "Marcus Chen",
-    handle: "@marcushorology",
-    role: "Watch Collector, Hong Kong",
-    avatar: "MC",
-    avatarColor: "from-violet-500 to-violet-700",
-    rating: 5,
-    quote:
-      "Aureon is simply the best platform for serious watch collectors. The authentication process is rigorous and every seller I've dealt with has been professional. Picked up a Nautilus 5711 that was exactly as described.",
-  },
-  {
-    id: "2",
-    name: "Isabelle Mercier",
-    handle: "@isabelleresells",
-    role: "Art Dealer, Paris",
-    avatar: "IM",
-    avatarColor: "from-pink-500 to-pink-700",
-    rating: 5,
-    quote:
-      "As a seller, Aureon's platform gives me the credibility I need. My clients trust that every piece is verified, and the blockchain provenance feature is going to be game-changing when it launches.",
-  },
-  {
-    id: "3",
-    name: "Jordan Ellis",
-    handle: "@jordancollects",
-    role: "Fashion Collector, NYC",
-    avatar: "JE",
-    avatarColor: "from-amber-500 to-amber-700",
-    rating: 5,
-    quote:
-      "Finally a marketplace that takes authentication as seriously as the collectors who use it. The interface is gorgeous, buying is seamless, and my Birkin arrived in perfect condition with all the documentation.",
-  },
+const AVATAR_COLORS = [
+  "from-violet-500 to-violet-700",
+  "from-pink-500 to-pink-700",
+  "from-amber-500 to-amber-700",
 ]
 
-export function Testimonials() {
+export function Testimonials({ testimonials }: { testimonials: HomeTestimonial[] }) {
+  // Real reviews or nothing — an empty marketplace has no collector voices yet.
+  if (testimonials.length === 0) return null
+
   return (
     <section className="bg-midnight py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -72,7 +46,7 @@ export function Testimonials() {
           variants={{ show: { transition: { staggerChildren: 0.15 } } }}
           className="grid gap-6 md:grid-cols-3"
         >
-          {testimonials.map((t) => (
+          {testimonials.map((t, i) => (
             <motion.div
               key={t.id}
               variants={{
@@ -96,13 +70,20 @@ export function Testimonials() {
                 {/* Author */}
                 <div className="mt-6 flex items-center gap-3 border-t border-white/5 pt-5">
                   <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br ${t.avatarColor} text-xs font-bold text-white shrink-0`}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br ${AVATAR_COLORS[i % AVATAR_COLORS.length]} text-xs font-bold text-white`}
                   >
-                    {t.avatar}
+                    {t.avatarUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={t.avatarUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      t.initials
+                    )}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.role}</p>
+                    {t.productTitle && (
+                      <p className="truncate text-xs text-muted-foreground">on {t.productTitle}</p>
+                    )}
                   </div>
                 </div>
               </div>

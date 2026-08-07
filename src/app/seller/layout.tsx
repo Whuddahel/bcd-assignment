@@ -8,7 +8,11 @@ export default async function SellerLayout({ children }: { children: React.React
   const isSeller = Boolean(user && (user.role === "seller" || user.role === "admin"))
 
   return (
-    <SellerShell isSeller={isSeller} businessName={seller?.businessName ?? null}>
+    <SellerShell
+      isSeller={isSeller}
+      businessName={seller?.businessName ?? null}
+      logoUrl={seller?.logoUrl ?? null}
+    >
       {children}
     </SellerShell>
   )

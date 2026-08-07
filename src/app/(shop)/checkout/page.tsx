@@ -300,9 +300,9 @@ function RealPaymentAndReview({
 
           <div className="grid grid-cols-3 gap-3">
             {[
-              { icon: Shield,  label: "Authenticated",   sub: "Every item verified"   },
+              { icon: Shield,  label: "Reviewed listings", sub: "Every item vetted"     },
               { icon: Lock,    label: "SSL encrypted",    sub: "256-bit security"      },
-              { icon: Package, label: "Insured shipping", sub: "Full coverage"         },
+              { icon: Package, label: "Buyer protection", sub: "Refund if misrepresented" },
             ].map(({ icon: Icon, label, sub }) => (
               <div key={label} className="glass-card rounded-xl p-3 text-center">
                 <Icon className="mx-auto h-4 w-4 text-violet-400" />
@@ -516,9 +516,9 @@ function MockPaymentAndReview({
 
         <div className="grid grid-cols-3 gap-3">
           {[
-            { icon: Shield,  label: "Authenticated",   sub: "Every item verified"   },
+            { icon: Shield,  label: "Reviewed listings", sub: "Every item vetted"     },
             { icon: Lock,    label: "SSL encrypted",    sub: "256-bit security"      },
-            { icon: Package, label: "Insured shipping", sub: "Full coverage"         },
+            { icon: Package, label: "Buyer protection", sub: "Refund if misrepresented" },
           ].map(({ icon: Icon, label, sub }) => (
             <div key={label} className="glass-card rounded-xl p-3 text-center">
               <Icon className="mx-auto h-4 w-4 text-violet-400" />
@@ -578,6 +578,7 @@ export default function CheckoutPage() {
   // Prefill from the signed-in user once their session loads — still editable.
   useEffect(() => {
     if (!user) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAddress((a) => ({
       ...a,
       name: a.name || user.fullName || "",

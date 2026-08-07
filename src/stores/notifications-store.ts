@@ -3,11 +3,16 @@
 import { create } from "zustand"
 
 export type NotificationType =
+  | "order_confirmed"
   | "order_shipped"
   | "order_delivered"
-  | "price_drop"
+  | "order_refunded"
+  | "payment_failed"
+  | "new_sale"
   | "seller_approved"
-  | "review_reply"
+  | "seller_application"
+  | "listing_approved"
+  | "listing_rejected"
   | "new_message"
 
 export type Notification = {

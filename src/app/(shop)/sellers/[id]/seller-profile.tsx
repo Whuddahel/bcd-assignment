@@ -32,7 +32,16 @@ export function SellerProfile({
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      {/* Banner */}
+      <div className="relative h-44 w-full overflow-hidden bg-gradient-to-br from-violet-600/30 via-pink-600/15 to-midnight-100 sm:h-56">
+        {seller.bannerUrl && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={seller.bannerUrl} alt="" className="h-full w-full object-cover" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-midnight via-midnight/20 to-transparent" />
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
         {/* Profile header */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -40,11 +49,16 @@ export function SellerProfile({
           transition={{ duration: 0.5, ease: EASE }}
           className="mb-10 flex flex-wrap items-start gap-6"
         >
-          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-3xl gradient-brand text-4xl font-bold text-white shadow-lg">
-            {seller.businessName.charAt(0)}
+          <div className="-mt-12 flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-3xl gradient-brand text-4xl font-bold text-white shadow-lg ring-4 ring-midnight">
+            {seller.logoUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={seller.logoUrl} alt={seller.businessName} className="h-full w-full object-cover" />
+            ) : (
+              seller.businessName.charAt(0)
+            )}
           </div>
 
-          <div className="flex-1">
+          <div className="flex-1 pt-4">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="font-display text-3xl font-bold text-foreground">
                 {seller.businessName}

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { useLiveData } from "@/lib/config"
 import { getSessionUser } from "@/lib/auth/session"
 import { createSupabaseServerAdminClient } from "@/lib/supabase/server"
+import { notify, getSellerOwnerIds } from "@/lib/data/notifications"
 import { sendEmail } from "@/lib/email/client"
 import ShippingUpdateEmail from "@/emails/shipping-update"
 import { env } from "@/lib/env"
@@ -74,15 +75,42 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Failed to update order status." }, { status: 500 })
   }
 
+  const shortId = order.id.slice(0, 8).toUpperCase()
+
+  // Tell the buyer in-app, and the sellers once the item has landed.
+  if (status === "shipped") {
+    await notify({
+      userId: order.buyer_id,
+      type: "order_shipped",
+      title: `Order #${shortId} is on its way`,
+      body: "Your order has been shipped. Confirm delivery once it arrives.",
+      href: "/account/orders",
+    })
+  } else {
+    const owners = await getSellerOwnerIds(order.order_items.map((item) => item.seller_id))
+    await notify([
+      {
+        userId: order.buyer_id,
+        type: "order_delivered",
+        title: `Order #${shortId} delivered`,
+        body: "Enjoy it — you can now review the item or list it for resale.",
+        href: "/account/collection",
+      },
+      ...[...new Set(owners.values())].map((ownerId) => ({
+        userId: ownerId,
+        type: "order_delivered" as const,
+        title: `Order #${shortId} was delivered`,
+        body: "The buyer has received their item. Your payout is on its way.",
+        href: "/seller/orders",
+      })),
+    ])
+  }
+
   // If status is 'shipped', send email to buyer
   if (status === "shipped") {
     try {
-      const { data: buyer } = await admin
-        .from("profiles")
-        .select("id, email:users(email)")
-      
       const { data: authUser } = await admin.auth.admin.getUserById(order.buyer_id)
-      
+
       if (authUser && authUser.user?.email) {
         await sendEmail({
           to: authUser.user.email,

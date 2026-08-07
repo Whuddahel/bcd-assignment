@@ -40,13 +40,11 @@ const links = {
     { label: "Become a Seller",  href: "/seller/apply" },
     { label: "Seller Dashboard", href: "/seller" },
     { label: "All Sellers",      href: "/sellers" },
-    { label: "Pricing & Fees",   href: "/#how-it-works" },
+    { label: "Pricing & Fees",   href: "/seller/apply#pricing" },
   ],
   Company: [
     { label: "About Aureon",     href: "/about" },
     { label: "How It Works",     href: "/#how-it-works" },
-    { label: "Press",            href: "/press" },
-    { label: "Careers",          href: "/careers" },
     { label: "Contact",          href: "/contact" },
   ],
   Legal: [
@@ -131,8 +129,7 @@ export function Footer() {
             © {new Date().getFullYear()} Aureon Inc. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground/60">
-            ✦ Provenance-powered by blockchain —{" "}
-            <span className="text-violet-400/80">coming Phase 2</span>
+            ✦ Provenance-powered by blockchain
           </p>
         </div>
       </div>

@@ -8,6 +8,11 @@ import { toLast6Months } from "@/lib/dashboard"
 import { requireUser } from "@/lib/auth/session"
 import { createSupabaseServerAdminClient } from "@/lib/supabase/server"
 import { formatPrice } from "@/lib/utils"
+import { appConfig } from "@/lib/config"
+
+// Sellers are paid subtotal minus the platform fee (see createSellerTransfers in
+// lib/stripe/fulfillment.tsx) — every revenue figure here is net, not gross.
+const NET_FACTOR = (100 - appConfig.stripe.platformFeePercent) / 100
 
 const statusStyle: Record<string, string> = {
   delivered: "bg-emerald-500/10 text-emerald-400",
@@ -50,7 +55,7 @@ async function getSellerDashboard(userId: string) {
     return order && order.status !== "refunded" && order.status !== "cancelled"
   })
 
-  const totalRevenue = soldItems.reduce((s, i) => s + i.price * i.quantity, 0)
+  const totalRevenue = Math.round(soldItems.reduce((s, i) => s + i.price * i.quantity, 0) * NET_FACTOR)
   const orderIds = new Set(
     soldItems.map((i) => (i.orders as unknown as { id: string }).id),
   )
@@ -58,7 +63,7 @@ async function getSellerDashboard(userId: string) {
   const monthly = toLast6Months(
     soldItems.map((i) => {
       const order = i.orders as unknown as { created_at: string }
-      return { created_at: order.created_at, amount: (i.price * i.quantity) / 100 }
+      return { created_at: order.created_at, amount: (i.price * i.quantity * NET_FACTOR) / 100 }
     }),
   )
 
@@ -87,7 +92,7 @@ async function getSellerDashboard(userId: string) {
 }
 
 export default async function SellerDashboard() {
-  const user = await requireUser(["seller", "admin"])
+  const user = await requireUser(["seller", "admin", "support"])
   const data = await getSellerDashboard(user.id)
   if (!data) {
     return (
@@ -101,7 +106,7 @@ export default async function SellerDashboard() {
   }
 
   const statCards = [
-    { label: "Total Revenue",   value: formatPrice(data.totalRevenue / 100), icon: TrendingUp, color: "text-violet-400" },
+    { label: "Total Revenue (after fees)", value: formatPrice(data.totalRevenue / 100), icon: TrendingUp, color: "text-violet-400" },
     { label: "Total Sales",     value: data.totalSales,                      icon: ShoppingBag, color: "text-pink-400"  },
     { label: "Active Listings", value: data.activeListings,                  icon: Package,    color: "text-amber-400"  },
     { label: "Avg. Rating",     value: `${data.rating} ★`,                   icon: Star,       color: "text-emerald-400" },

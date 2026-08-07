@@ -43,8 +43,8 @@ export default function AuthenticityPage() {
             Authenticity <GradientText>Guarantee</GradientText>
           </h1>
           <p className="mt-4 max-w-xl text-muted-foreground">
-            Every item on Aureon is authenticated. Here's exactly what that means, how it works,
-            and what you're protected against.
+            Every item on Aureon is authenticated. Here&apos;s exactly what that means, how it works,
+            and what you&apos;re protected against.
           </p>
         </div>
       </div>
@@ -66,7 +66,7 @@ export default function AuthenticityPage() {
         <div className="grid gap-12 lg:grid-cols-[1fr_340px]">
           <div>
             <Section title="What authentication means">
-              <p>When you see the "Verified Authentic" badge on an Aureon listing, it means the item
+              <p>When you see the &quot;Verified Authentic&quot; badge on an Aureon listing, it means the item
                 has been assessed against category-specific authenticity criteria by qualified experts.
                 This is not a price guarantee or investment advice — it is a statement that the item
                 is what it claims to be.</p>
@@ -108,13 +108,11 @@ export default function AuthenticityPage() {
             </Section>
 
             <Section title="Filing a claim">
-              <p>If you believe an item is not authentic, contact us at claims@aureon.io within 14
-                days of delivery with: your order number; clear photos of the item, serial numbers,
-                and any authentication markers; and a description of the discrepancy. We respond
-                within 24 hours.</p>
-              <p>We may request the item be sent for independent re-authentication. Aureon covers
-                all shipping costs for valid claims. Refunds are processed within 5 business days
-                of claim approval.</p>
+              <p>If you believe an item is not authentic, open a support ticket from your account
+                within 14 days of delivery with: your order number; clear photos of the item, serial
+                numbers, and any authentication markers; and a description of the discrepancy.</p>
+              <p>We may request the item be sent for independent re-authentication. Approved claims
+                are refunded to your original payment method once the return is confirmed.</p>
             </Section>
           </div>
 

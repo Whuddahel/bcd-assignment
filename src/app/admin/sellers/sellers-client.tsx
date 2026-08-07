@@ -86,8 +86,13 @@ export function AdminSellersClient({ sellers }: { sellers: SellerVM[] }) {
           ) : (
             filtered.map((s) => (
               <div key={s.id} className="flex flex-wrap items-center gap-4 px-5 py-4 transition-colors hover:bg-white/2">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl gradient-brand text-sm font-bold text-white">
-                  {s.businessName.charAt(0)}
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl gradient-brand text-sm font-bold text-white">
+                  {s.logoUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={s.logoUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    s.businessName.charAt(0)
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <Link href={`/sellers/${s.id}`} className="truncate text-sm font-medium text-foreground hover:text-violet-300">

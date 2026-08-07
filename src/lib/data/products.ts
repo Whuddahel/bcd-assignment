@@ -3,7 +3,7 @@ import { createSupabaseServerClient, createSupabaseServerAdminClient } from "@/l
 import { mapProduct, type ProductVM, type ProductRow } from "./types"
 
 const PRODUCT_SELECT =
-  "*, product_images(url,sort_order,is_primary), seller_profiles(business_name,verified), categories(name,slug)"
+  "*, product_images(url,sort_order,is_primary), seller_profiles(business_name,verified,logo_url), categories(name,slug)"
 
 export type ProductSort = "newest" | "price_asc" | "price_desc" | "trending" | "featured"
 
@@ -29,7 +29,7 @@ export async function getProducts(query: ProductQuery = {}): Promise<ProductVM[]
 
   // !inner so filtering on the embedded category slug filters parent rows.
   const select = query.categorySlug
-    ? "*, product_images(url,sort_order,is_primary), seller_profiles(business_name,verified), categories!inner(name,slug)"
+    ? "*, product_images(url,sort_order,is_primary), seller_profiles(business_name,verified,logo_url), categories!inner(name,slug)"
     : PRODUCT_SELECT
 
   let q = supabase.from("products").select(select).eq("status", "active")

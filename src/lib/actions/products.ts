@@ -5,7 +5,7 @@ import { z } from "zod"
 import { createSupabaseServerClient, createSupabaseServerAdminClient } from "@/lib/supabase/server"
 import { getSessionUser } from "@/lib/auth/session"
 import { slugify } from "@/lib/utils"
-import type { ProductStatus } from "@/types/database"
+import { notify, getStaffUserIds } from "@/lib/data/notifications"
 
 export type ActionResult =
   | { ok: true; message?: string; slug?: string }
@@ -18,7 +18,10 @@ const productSchema = z.object({
   condition: z.enum(["mint", "excellent", "very_good", "good", "fair"]),
   price: z.number().positive("Price must be greater than 0"),
   originalPrice: z.number().positive().optional(),
-  status: z.enum(["draft", "pending_review", "active"]).default("pending_review"),
+  // "active" is deliberately excluded — only admin moderation (adminSetProductStatus
+  // in lib/actions/admin.ts) may publish a listing. A seller can only save a draft
+  // or submit it for review.
+  status: z.enum(["draft", "pending_review"]).default("pending_review"),
   attributes: z.record(z.string(), z.string()).optional().default({}),
   imageUrl: z.string().url().optional(),
 })
@@ -90,14 +93,32 @@ export async function createProduct(input: ProductInput): Promise<ActionResult> 
     })
   }
 
+  if (d.status === "pending_review") {
+    await notify(
+      (await getStaffUserIds(["admin"])).map((id) => ({
+        userId: id,
+        type: "seller_application" as const,
+        title: `New listing awaiting review: ${d.title}`,
+        body: "A seller submitted a new listing — review it before it can go live.",
+        href: "/admin/products",
+      })),
+    )
+  }
+
   revalidatePath("/seller/products")
   revalidatePath("/browse")
   return { ok: true, message: "Listing created.", slug: product.slug }
 }
 
+/**
+ * Seller self-service transition: save as draft, or (re)submit for review.
+ * Deliberately cannot reach "active"/"archived"/"sold" — those are moderation
+ * or system-only transitions (see adminSetProductStatus in lib/actions/admin.ts
+ * and the order-fulfilment / status routes).
+ */
 export async function updateProductStatus(
   id: string,
-  status: ProductStatus,
+  status: "draft" | "pending_review",
 ): Promise<ActionResult> {
   const sellerId = await currentSellerId()
   if (!sellerId) return { ok: false, error: "Not authorized." }
@@ -110,6 +131,19 @@ export async function updateProductStatus(
     .eq("seller_id", sellerId)
 
   if (error) return { ok: false, error: error.message }
+
+  if (status === "pending_review") {
+    await notify(
+      (await getStaffUserIds(["admin"])).map((staffId) => ({
+        userId: staffId,
+        type: "seller_application" as const,
+        title: "A listing was resubmitted for review",
+        body: "A seller resubmitted an edited listing — review it before it can go live.",
+        href: "/admin/products",
+      })),
+    )
+  }
+
   revalidatePath("/seller/products")
   revalidatePath("/browse")
   return { ok: true, message: "Listing updated." }
@@ -228,6 +262,16 @@ export async function createResaleListing(input: ResaleInput): Promise<ActionRes
     .single()
 
   if (error || !product) return { ok: false, error: error?.message ?? "Could not create listing." }
+
+  await notify(
+    (await getStaffUserIds(["admin"])).map((staffId) => ({
+      userId: staffId,
+      type: "seller_application" as const,
+      title: `New resale listing awaiting review: ${source.title}`,
+      body: "A seller relisted an owned item for resale — review it before it can go live.",
+      href: "/admin/products",
+    })),
+  )
 
   const images = source.product_images ?? []
   if (images.length > 0) {

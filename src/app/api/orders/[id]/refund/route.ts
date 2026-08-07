@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { useLiveData } from "@/lib/config"
 import { getSessionUser } from "@/lib/auth/session"
 import { createSupabaseServerAdminClient } from "@/lib/supabase/server"
+import { notify } from "@/lib/data/notifications"
 import { getStripe } from "@/lib/stripe/server"
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -23,7 +24,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
   const { data: order, error } = await admin
     .from("orders")
-    .select("id, status, stripe_payment_intent_id, order_items(seller_id)")
+    .select("id, status, buyer_id, total_amount, stripe_payment_intent_id, order_items(seller_id)")
     .eq("id", orderId)
     .maybeSingle()
 
@@ -71,6 +72,29 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     }
   }
 
+  // Claw back the seller payout(s). Transfers are created at order confirmation
+  // (createSellerTransfers in fulfillment.tsx), before shipping/delivery — so
+  // without this, a seller could refund their own order, the buyer gets their
+  // money back, and the seller silently keeps the payout at the platform's
+  // expense. Transfers for this order all share `transfer_group` = the
+  // PaymentIntent id, so no separate column is needed to find them.
+  try {
+    const transfers = await stripe.transfers.list({
+      transfer_group: order.stripe_payment_intent_id,
+      limit: 100,
+    })
+    for (const transfer of transfers.data) {
+      if (transfer.reversed) continue
+      try {
+        await stripe.transfers.createReversal(transfer.id)
+      } catch (err) {
+        console.error(`refund: failed to reverse transfer ${transfer.id} for order ${order.id}`, err)
+      }
+    }
+  } catch (err) {
+    console.error(`refund: failed to look up transfers to reverse for order ${order.id}`, err)
+  }
+
   // Update immediately for responsive UI; the charge.refunded webhook is the
   // source of truth and will set the same status if it arrives first/later.
   const { error: updateError } = await admin
@@ -85,6 +109,15 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       { status: 500 },
     )
   }
+
+  const shortId = order.id.slice(0, 8).toUpperCase()
+  await notify({
+    userId: order.buyer_id,
+    type: "order_refunded",
+    title: `Order #${shortId} refunded`,
+    body: `$${(order.total_amount / 100).toFixed(2)} is on its way back to your original payment method.`,
+    href: "/account/orders",
+  })
 
   return NextResponse.json({ ok: true })
 }

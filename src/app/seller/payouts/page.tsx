@@ -35,7 +35,7 @@ async function loadPayoutState(userId: string) {
 }
 
 export default async function SellerPayoutsPage() {
-  const user = await requireUser(["seller", "admin"])
+  const user = await requireUser(["seller", "admin", "support"])
   const state = useLiveData ? await loadPayoutState(user.id) : null
 
   return (

@@ -15,7 +15,11 @@ const ROUTE_GUARDS: RouteGuard[] = [
   // The "become a seller" application must be reachable by any signed-in user
   // (typically a customer). Listed BEFORE the /seller guard so it wins.
   { pattern: /^\/seller\/apply(?:\/|$)/, roles: ["customer", "seller", "admin", "support"] },
-  { pattern: /^\/seller(?:\/|$)/, roles: ["seller", "admin"] },
+  // "seller" and "admin" hold that role outright; "support" is included too
+  // because a support agent who applies (see applyAsSeller in
+  // lib/actions/seller.ts) keeps role="support" by design — without this they'd
+  // get a seller_profiles row they can never reach the hub to manage.
+  { pattern: /^\/seller(?:\/|$)/, roles: ["seller", "admin", "support"] },
   { pattern: /^\/admin(?:\/|$)/, roles: ["admin"] },
   { pattern: /^\/support(?:\/|$)/, roles: ["support", "admin"] },
 ]

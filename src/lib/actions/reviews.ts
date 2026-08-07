@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { getSessionUser } from "@/lib/auth/session"
+import { findPurchaseForReview } from "@/lib/data/reviews"
 
 export type ActionResult =
   | { ok: true; message?: string }
@@ -26,6 +27,11 @@ export async function submitReview(input: ReviewInput): Promise<ActionResult> {
   const user = await getSessionUser()
   if (!user || user.isMock) return { ok: false, error: "Please sign in to leave a review." }
 
+  const purchase = await findPurchaseForReview(user.id, parsed.data.productId)
+  if (!purchase) {
+    return { ok: false, error: "You can only review items you've purchased." }
+  }
+
   const supabase = await createSupabaseServerClient()
   const d = parsed.data
 
@@ -34,6 +40,7 @@ export async function submitReview(input: ReviewInput): Promise<ActionResult> {
     {
       product_id: d.productId,
       reviewer_id: user.id,
+      order_id: purchase.orderId,
       rating: d.rating,
       title: d.title ?? null,
       body: d.body ?? null,
@@ -43,6 +50,8 @@ export async function submitReview(input: ReviewInput): Promise<ActionResult> {
 
   if (error) return { ok: false, error: error.message }
 
-  revalidatePath(`/product`)
+  const { data: product } = await supabase.from("products").select("slug").eq("id", d.productId).maybeSingle()
+  if (product) revalidatePath(`/product/${product.slug}`)
+
   return { ok: true, message: "Thanks for your review." }
 }
