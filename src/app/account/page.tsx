@@ -116,7 +116,7 @@ export default async function AccountPage() {
             </div>
           </Link>
         </Button>
-        <Button variant="outline" className="h-auto justify-start gap-3 border-white/10 p-4 hover:bg-white/5" asChild>
+        {/* <Button variant="outline" className="h-auto justify-start gap-3 border-white/10 p-4 hover:bg-white/5" asChild>
           <Link href="/account/profile">
             <CheckCircle className="h-4 w-4 text-emerald-400" />
             <div className="text-left">
@@ -124,7 +124,7 @@ export default async function AccountPage() {
               <p className="text-xs text-muted-foreground">Add shipping address</p>
             </div>
           </Link>
-        </Button>
+        </Button> */}
       </div>
     </div>
   )
