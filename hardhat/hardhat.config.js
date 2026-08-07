@@ -1,11 +1,16 @@
 require("@nomicfoundation/hardhat-toolbox")
+require("dotenv").config()
 
 /**
- * Aureon local blockchain configuration.
+ * Aureon blockchain configuration.
  *
- * Everything runs against a local Hardhat node (chainId 31337) — no testnet,
- * no wallet extension. The commented sepolia block shows how a real network
- * would slot in later without changing any application code.
+ * Two ways to run this:
+ *  - Local (default, no keys needed): a Hardhat node at chainId 31337.
+ *  - Sepolia testnet (free): set SEPOLIA_RPC_URL + DEPLOYER_KEY in hardhat/.env
+ *    (gitignored — see hardhat/.env.example), then
+ *    `npm run deploy:sepolia`. No code changes needed either way — the app
+ *    reads whichever network's addresses `scripts/deploy.js` last wrote to
+ *    ../src/lib/blockchain/deployments.json.
  *
  * @type {import('hardhat/config').HardhatUserConfig}
  */
@@ -27,11 +32,13 @@ module.exports = {
       url: "http://127.0.0.1:8545",
       chainId: 31337,
     },
-    // Future: real network deployment — supply keys via env vars, no code change.
-    // sepolia: {
-    //   url: process.env.SEPOLIA_RPC_URL || "",
-    //   accounts: process.env.DEPLOYER_KEY ? [process.env.DEPLOYER_KEY] : [],
-    //   chainId: 11155111,
-    // },
+    // Free public testnet — no paid RPC provider required. Override
+    // SEPOLIA_RPC_URL in hardhat/.env if you'd rather use your own
+    // Alchemy/Infura endpoint (higher rate limits than the public one).
+    sepolia: {
+      url: process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com",
+      accounts: process.env.DEPLOYER_KEY ? [process.env.DEPLOYER_KEY] : [],
+      chainId: 11155111,
+    },
   },
 }

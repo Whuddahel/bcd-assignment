@@ -1,8 +1,10 @@
 /**
- * Seed the local chain with demo provenance so the grader sees a working system
- * the moment they open the app — no manual clicking required.
+ * Seed the deployed chain with demo provenance so the grader sees a working
+ * system the moment they open the app — no manual clicking required. Use the
+ * same --network you passed to deploy.js.
  *
- *   npx hardhat run scripts/seed-demo.js --network localhost
+ *   npx hardhat run scripts/seed-demo.js --network localhost   (local node)
+ *   npx hardhat run scripts/seed-demo.js --network sepolia     (free testnet)
  *
  * It will:
  *   1. Mint digital twins for up to 5 seeded Supabase products

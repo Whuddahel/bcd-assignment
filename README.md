@@ -419,20 +419,28 @@ Walk this checklist after the first production deploy:
 ### Blockchain (Phase 2) on Vercel
 
 Vercel is serverless — it cannot host the persistent local Hardhat node the blockchain
-feature is built around (§10 in [DOCUMENTATION.md](DOCUMENTATION.md)). Two honest options:
+feature is built around (§10 in [DOCUMENTATION.md](DOCUMENTATION.md)). Two options, both free:
 
 - **Leave it unconfigured in production** (don't set `BLOCKCHAIN_OPERATOR_KEY` /
-  `NEXT_PUBLIC_BLOCKCHAIN_RPC_URL`). Every blockchain read/write in this codebase is
-  degrade-safe by design, so the deployed app runs normally — Mint/Attest buttons and
+  `NEXT_PUBLIC_BLOCKCHAIN_RPC_URL` on Vercel). Every blockchain read/write in this codebase
+  is degrade-safe by design, so the deployed app runs normally — Mint/Attest buttons and
   provenance cards clearly show "not available" instead of failing silently or faking
-  success. This is the right choice for a graded demo: run Hardhat **locally** (README's
-  Blockchain Setup section) when showing that part live.
-- **Point at a real deployed chain** if you want it live in production: deploy
-  `AureonAsset`/`AureonAttestor` to a public testnet (Sepolia, etc.) instead of Hardhat,
-  fund the operator address with testnet ETH, and set `NEXT_PUBLIC_BLOCKCHAIN_RPC_URL` /
-  `NEXT_PUBLIC_BLOCKCHAIN_CHAIN_ID` / `BLOCKCHAIN_OPERATOR_KEY` to match. This is out of
-  scope for the assignment's "local Hardhat Node" requirement, so only do this if you
-  specifically want a persistently-live demo.
+  success. Run Hardhat **locally** (this file's Blockchain Setup section) for the graded
+  demo of that part.
+- **Deploy to Sepolia** (a free public testnet) so it's live in production too —
+  `hardhat.config.js` already has a `sepolia` network wired to a free public RPC
+  (`https://ethereum-sepolia-rpc.publicnode.com`, no signup required):
+  1. `cd hardhat && cp .env.example .env`, generate a throwaway key
+     (`node -e "console.log(require('ethers').Wallet.createRandom())"`), put its
+     `privateKey` in `DEPLOYER_KEY`.
+  2. Fund that address with free Sepolia ETH from a faucet (e.g.
+     <https://cloud.google.com/application/web3/faucet/ethereum/sepolia> — a couple of
+     cents' worth of test ETH covers both contract deployments many times over).
+  3. `npm run deploy:sepolia` — deploys both contracts and writes
+     `src/lib/blockchain/deployments.json` automatically, same as the local flow.
+  4. On Vercel, set `NEXT_PUBLIC_BLOCKCHAIN_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com`,
+     `NEXT_PUBLIC_BLOCKCHAIN_CHAIN_ID=11155111`, `BLOCKCHAIN_OPERATOR_KEY=<the same DEPLOYER_KEY>`,
+     commit the updated `deployments.json`, and redeploy.
 
 ### Rollback
 
