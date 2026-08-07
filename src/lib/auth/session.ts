@@ -28,11 +28,19 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
 
   if (error || !user) return null
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("role, full_name, phone, avatar_url")
     .eq("id", user.id)
     .single()
+
+  // A failed profile lookup silently falling back to "customer" below is how
+  // a real seller/admin/support user ends up looking bounced to a default
+  // account — log it loudly so a transient DB/network hiccup is diagnosable
+  // instead of looking like a permanent role change.
+  if (profileError) {
+    console.error("getSessionUser: profile lookup failed for", user.id, profileError)
+  }
 
   return {
     id: user.id,

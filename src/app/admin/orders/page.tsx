@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { GradientText } from "@/components/brand/gradient-text"
 import { RefundButton } from "@/components/orders/refund-button"
 import { useLiveData } from "@/lib/config"
+import { requireUser } from "@/lib/auth/session"
 import { createSupabaseServerAdminClient } from "@/lib/supabase/server"
 import { formatPrice } from "@/lib/utils"
 import type { Metadata } from "next"
@@ -37,6 +38,7 @@ async function getAllOrders(): Promise<AdminOrder[]> {
 }
 
 export default async function AdminOrdersPage() {
+  await requireUser(["admin"])
   const orders = useLiveData ? await getAllOrders() : []
 
   return (

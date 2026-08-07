@@ -80,6 +80,13 @@ export async function replyToTicket(input: z.input<typeof replySchema>): Promise
   const isInternal = Boolean(parsed.data.isInternal) && isStaff
 
   const supabase = await createSupabaseServerClient()
+
+  const { data: ticketBefore } = await supabase
+    .from("support_tickets")
+    .select("status, user_id")
+    .eq("id", parsed.data.ticketId)
+    .maybeSingle()
+
   const { error } = await supabase.from("support_messages").insert({
     ticket_id: parsed.data.ticketId,
     sender_id: user.id,
@@ -88,10 +95,18 @@ export async function replyToTicket(input: z.input<typeof replySchema>): Promise
   })
   if (error) return { ok: false, error: error.message }
 
+  // A customer replying to their own resolved ticket means it needs another
+  // look — otherwise it sits marked "Resolved" while genuinely still open.
+  const shouldReopen =
+    !isStaff && ticketBefore?.user_id === user.id && ticketBefore?.status === "resolved"
+
   // Touch the ticket so it re-sorts to the top of the inbox.
   await supabase
     .from("support_tickets")
-    .update({ updated_at: new Date().toISOString() })
+    .update({
+      updated_at: new Date().toISOString(),
+      ...(shouldReopen ? { status: "open" as TicketStatus } : {}),
+    })
     .eq("id", parsed.data.ticketId)
 
   // Internal notes are staff-only scratch space — nobody gets pinged for them.

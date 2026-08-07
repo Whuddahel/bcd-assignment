@@ -20,7 +20,7 @@ function formatTs(unixSeconds: number): string {
  * gracefully when the product isn't minted or the node is unreachable.
  */
 export function ProvenanceCard({ tokenId }: { tokenId?: string | null }) {
-  const { data, loading } = useProvenance(tokenId)
+  const { data, loading, error } = useProvenance(tokenId)
 
   const shell =
     "mt-6 rounded-xl border border-violet-500/20 bg-violet-500/5 p-5"
@@ -32,6 +32,30 @@ export function ProvenanceCard({ tokenId }: { tokenId?: string | null }) {
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin text-violet-400" />
           Reading on-chain provenance…
+        </div>
+      </div>
+    )
+  }
+
+  // ── Minted, but the chain couldn't be reached right now ── (distinct from
+  // "not minted" — this item DOES have a token id, don't claim otherwise)
+  if (tokenId && !data && error) {
+    return (
+      <div className={shell}>
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 rounded-lg bg-amber-500/20 p-2">
+            <ShieldQuestion className="h-4 w-4 text-amber-400" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">Provenance &amp; Authenticity</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              This item has a digital twin, but its on-chain record couldn&apos;t be read right
+              now (the blockchain node may be offline). Try again shortly.
+            </p>
+            <Badge className="mt-2 border-amber-500/20 bg-amber-500/10 text-[10px] text-amber-400">
+              Certificate unavailable
+            </Badge>
+          </div>
         </div>
       </div>
     )

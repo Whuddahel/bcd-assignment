@@ -31,38 +31,41 @@ export async function getAttestation(tokenId: string): Promise<AttestationInfo> 
   }
 }
 
-/** Read the full provenance + attestation for a token (never throws). */
+/**
+ * Read the full provenance + attestation for a token. Resolves to `null` only
+ * when the feature isn't configured or the token genuinely has no mint event
+ * yet — a real read failure (node unreachable, RPC error) is left to *throw*
+ * so callers (see `useProvenance`) can tell "not minted" apart from
+ * "couldn't check right now" instead of quietly showing the former for both.
+ */
 export async function getProvenance(tokenId: string): Promise<AssetProvenance | null> {
   if (!isBlockchainConfigured || !tokenId) return null
 
-  try {
-    const asset = getAssetReader()
-    const [rawEvents, attestation, owner] = await Promise.all([
-      asset.getProvenance(tokenId),
-      getAttestation(tokenId),
-      asset.ownerOf(tokenId).catch(() => null),
-    ])
+  const asset = getAssetReader()
+  const [rawEvents, attestation, owner] = await Promise.all([
+    asset.getProvenance(tokenId),
+    getAttestation(tokenId),
+    asset.ownerOf(tokenId).catch(() => null),
+  ])
 
-    const events: ProvenanceEvent[] = (rawEvents as unknown[]).map((e) => {
-      const entry = e as { owner: string; timestamp: bigint; eventType: string }
-      return {
-        owner: String(entry.owner),
-        timestamp: Number(entry.timestamp),
-        event: String(entry.eventType),
-      }
-    })
-
-    // A token with no provenance events has never been minted.
-    if (events.length === 0) return null
-
+  const events: ProvenanceEvent[] = (rawEvents as unknown[]).map((e) => {
+    const entry = e as { owner: string; timestamp: bigint; eventType: string }
     return {
-      tokenId,
-      owner: owner ? String(owner) : null,
-      events,
-      attestation,
+      owner: String(entry.owner),
+      timestamp: Number(entry.timestamp),
+      event: String(entry.eventType),
     }
-  } catch {
-    return null
+  })
+
+  // A token with no provenance events has never been minted — a genuine
+  // "not minted" rather than a failed read, so this still resolves to null.
+  if (events.length === 0) return null
+
+  return {
+    tokenId,
+    owner: owner ? String(owner) : null,
+    events,
+    attestation,
   }
 }
 

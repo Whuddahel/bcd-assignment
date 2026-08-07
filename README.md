@@ -416,6 +416,24 @@ Walk this checklist after the first production deploy:
 - [ ] Browse and product pages show seeded products from Supabase, not mock data
 - [ ] `curl https://<your-domain>/api/auth/me` returns `{"user":null}` when signed out
 
+### Blockchain (Phase 2) on Vercel
+
+Vercel is serverless — it cannot host the persistent local Hardhat node the blockchain
+feature is built around (§10 in [DOCUMENTATION.md](DOCUMENTATION.md)). Two honest options:
+
+- **Leave it unconfigured in production** (don't set `BLOCKCHAIN_OPERATOR_KEY` /
+  `NEXT_PUBLIC_BLOCKCHAIN_RPC_URL`). Every blockchain read/write in this codebase is
+  degrade-safe by design, so the deployed app runs normally — Mint/Attest buttons and
+  provenance cards clearly show "not available" instead of failing silently or faking
+  success. This is the right choice for a graded demo: run Hardhat **locally** (README's
+  Blockchain Setup section) when showing that part live.
+- **Point at a real deployed chain** if you want it live in production: deploy
+  `AureonAsset`/`AureonAttestor` to a public testnet (Sepolia, etc.) instead of Hardhat,
+  fund the operator address with testnet ETH, and set `NEXT_PUBLIC_BLOCKCHAIN_RPC_URL` /
+  `NEXT_PUBLIC_BLOCKCHAIN_CHAIN_ID` / `BLOCKCHAIN_OPERATOR_KEY` to match. This is out of
+  scope for the assignment's "local Hardhat Node" requirement, so only do this if you
+  specifically want a persistently-live demo.
+
 ### Rollback
 
 Vercel keeps every previous deployment. **Deployments → ⋯ → Promote to Production**

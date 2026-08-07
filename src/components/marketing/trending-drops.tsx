@@ -122,11 +122,10 @@ function DropCard({ drop, index }: { drop: ProductVM; index: number }) {
               </div>
             )}
 
-            {/* Quick add */}
-            <motion.button
-              initial={{ opacity: 0, y: 6 }}
-              whileHover={{ opacity: 1, y: 0 }}
-              className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-violet-500/90 px-3 py-1.5 text-xs font-semibold text-white opacity-0 backdrop-blur-sm transition-all hover:bg-violet-500 group-hover:opacity-100"
+            {/* Quick add — always visible on touch (no hover there); fades in
+                on hover for pointer devices. */}
+            <button
+              className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full bg-violet-500/90 px-3 py-1.5 text-xs font-semibold text-white opacity-100 backdrop-blur-sm transition-opacity duration-200 hover:bg-violet-500 sm:opacity-0 sm:group-hover:opacity-100"
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
@@ -135,7 +134,7 @@ function DropCard({ drop, index }: { drop: ProductVM; index: number }) {
               }}
             >
               + Add to cart
-            </motion.button>
+            </button>
           </div>
 
           {/* Info */}

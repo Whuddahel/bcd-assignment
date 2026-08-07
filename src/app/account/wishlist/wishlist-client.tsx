@@ -166,7 +166,7 @@ export function WishlistClient({ initialItems }: { initialItems: ProductVM[] }) 
                   <button
                     onClick={() => handleRemove(p.id, p.title)}
                     aria-label="Remove from wishlist"
-                    className="absolute -right-2 -top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-midnight text-muted-foreground opacity-0 transition-opacity hover:text-pink-400 group-hover:opacity-100"
+                    className="absolute -right-2 -top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-midnight text-muted-foreground opacity-100 transition-opacity hover:text-pink-400 sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>

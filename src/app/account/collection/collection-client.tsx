@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { Shield, ExternalLink, Clock, Package } from "lucide-react"
+import { Shield, ShieldQuestion, ExternalLink, Package } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { GradientText } from "@/components/brand/gradient-text"
@@ -82,8 +82,9 @@ export function CollectionClient({ items, userId }: { items: CollectionEntry[]; 
               </Badge>
             </div>
             <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
-              Every delivered item carries an immutable on-chain authenticity certificate and
-              full ownership history — expand any item below to verify its provenance.
+              Items minted as a digital twin carry an immutable on-chain authenticity
+              certificate and full ownership history — expand any item below to check its
+              actual provenance status.
             </p>
           </div>
         </div>
@@ -126,18 +127,21 @@ export function CollectionClient({ items, userId }: { items: CollectionEntry[]; 
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-semibold text-foreground">{item.title}</h3>
-                        <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20 text-[10px]">
-                          <Shield className="mr-1 h-2.5 w-2.5" />
-                          Verified
-                        </Badge>
+                        {item.tokenId ? (
+                          <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20 text-[10px]">
+                            <Shield className="mr-1 h-2.5 w-2.5" />
+                            Minted
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-white/5 text-muted-foreground border-white/10 text-[10px]">
+                            <ShieldQuestion className="mr-1 h-2.5 w-2.5" />
+                            Not yet minted
+                          </Badge>
+                        )}
                       </div>
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         Purchased {formatDate(item.purchasedDate)}
                       </p>
-                      <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        Authenticity certificate verified (off-chain)
-                      </div>
                     </div>
 
                     <div className="shrink-0 text-right">

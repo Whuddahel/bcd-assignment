@@ -2,13 +2,85 @@
 
 > Aureon is a curated marketplace for authenticated luxury watches, art, and rare
 > collectibles. This document is the complete system setup guide and a feature‑by‑feature
-> explanation of the platform. **Phase 1** (this document) covers the full commerce stack.
-> **Phase 2** — on‑chain provenance / authenticity certificates — is scaffolded in the schema
-> and UI but intentionally out of scope here.
+> explanation of the platform. **Phase 1** (commerce: catalog, cart, checkout, orders,
+> moderation) and **Phase 2** (on‑chain provenance / authenticity certificates via a local
+> Hardhat blockchain) are both implemented and covered below — see §10 for Phase 2.
+
+---
+
+## Assignment coverage map — CT124-3-3-BCD (Part 2)
+
+This document *is* the "Documentation" deliverable required by the assignment brief
+(§2.3: format `.md`, explain setup, explain features). It doesn't restate the Part 1
+proposal (business case / industry analysis) — that is a separate document, already
+submitted. What follows maps Part 2's marking criteria directly onto working code, so a
+marker (or a teammate assembling the submission zip) can verify each line quickly.
+
+| Marking criterion | Weight | Where it's satisfied |
+| --- | --- | --- |
+| Frontend built with Next.js, React | — (2.1) | §2 Tech stack; every page under [`src/app/`](src/app) is a Next.js 16 App Router route built from React 19 components. |
+| Frontend linked to a local database (Postgres) | — (2.1) | §6 Data layer; [`src/lib/data/`](src/lib/data) (reads) and [`src/lib/actions/`](src/lib/actions) (writes) talk to Postgres via Supabase. Runs against **either** the hosted project **or** a fully local Postgres instance (`supabase start`, §3) — see the snippet below. |
+| Solidity smart contract deployed to a Hardhat Node (local blockchain) | — (2.1) | §10 Blockchain (Phase 2); contracts in [`hardhat/contracts/`](hardhat/contracts), deployed to a local Hardhat node per the README's [Blockchain Setup](README.md#blockchain-setup). |
+| Frontend linked to the Solidity smart contract | — (2.1) | §10.2–10.4; [`src/lib/blockchain/`](src/lib/blockchain) (server-signed writes + client reads) and the UI components in [`src/components/blockchain/`](src/components/blockchain). |
+| **Front End + Database** (solution development, with code snippets) | **20%** | §6, §7, §8 below, plus the snippet immediately below. |
+| **Solidity** (solution development, with code snippets) | **20%** | §10 below, plus the snippet immediately below. |
+
+**Front End + Database — a real code path** (reading a product for the browse page,
+[`src/lib/data/products.ts`](src/lib/data/products.ts)):
+
+```ts
+export async function getProducts(query: ProductQuery = {}): Promise<ProductVM[]> {
+  const supabase = await createSupabaseServerClient()
+
+  let q = supabase.from("products").select(select).eq("status", "active")
+
+  if (query.categorySlug) q = q.eq("categories.slug", query.categorySlug)
+  if (query.sellerId) q = q.eq("seller_id", query.sellerId)
+  if (query.minPrice != null) q = q.gte("price", Math.round(query.minPrice * 100))
+  if (query.maxPrice != null) q = q.lte("price", Math.round(query.maxPrice * 100))
+  // …search / trending / featured filters, then:
+
+  const { data } = await q
+  return (data ?? []).map(toProductVM) // raw row → UI-shaped view-model (cents → dollars, etc.)
+}
+```
+
+React Server Components call this directly (no separate REST layer needed) — see
+[`src/app/(shop)/browse/page.tsx`](<src/app/(shop)/browse/page.tsx>).
+
+**Solidity — a real code path** (minting a digital twin,
+[`hardhat/contracts/AureonAsset.sol`](hardhat/contracts/AureonAsset.sol)):
+
+```solidity
+function mintDigitalTwin(uint256 productId, address owner, string memory metadataUri)
+    external
+    onlyRole(SELLER_ROLE)
+    returns (uint256 tokenId)
+{
+    require(tokenOfProduct[productId] == 0, "AureonAsset: product already minted");
+    require(owner != address(0), "AureonAsset: mint to zero address");
+
+    tokenId = _nextTokenId++;
+    _safeMint(owner, tokenId);
+    _assets[tokenId] = AssetInfo({ productId: productId, seller: owner, mintedAt: block.timestamp, metadataUri: metadataUri });
+    // …records a `Minted` provenance entry, emits an event
+}
+```
+
+Called server-side via the platform's operator key (`src/lib/blockchain/server.ts`) when a
+seller clicks "Mint Digital Twin" on their listing — see §10.2 for why buyers/sellers never
+need their own wallet.
+
+**Submission checklist** (§2.3 of the brief):
+- Documentation (`.md`, this file): setup guide → §3–§5; feature reference → §7. ✅
+- Code: frontend → `src/`, `public/`, config files at repo root; Hardhat → `hardhat/`
+  (contracts, tests, deployment scripts). Remove `node_modules/` from both before zipping.
 
 ---
 
 ## Table of contents
+
+- [Assignment coverage map — CT124-3-3-BCD (Part 2)](#assignment-coverage-map--ct124-3-3-bcd-part-2)
 
 1. [Architecture overview](#1-architecture-overview)
 2. [Tech stack](#2-tech-stack)
@@ -143,7 +215,7 @@ works." These are the dashboard steps that must be done in each provider's conso
 2. **Database:** open the SQL editor and run, in order, the two files in
    `supabase/migrations/` then `supabase/seed.sql`. (Or `supabase db reset` locally.)
 3. **Storage:** create a public bucket named `avatars` (used by profile picture upload).
-   Create a `product-images` bucket if you want hosted product uploads.
+   Create a `products` bucket too — the seller listing form uploads directly to it.
 4. **API keys:** Settings → API → copy the Project URL, `anon` key, and `service_role`
    key into `.env.local` / your host's env.
 5. **Auth → URL configuration:** set the Site URL and add your deployed URL +

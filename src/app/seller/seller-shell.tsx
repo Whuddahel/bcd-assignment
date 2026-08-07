@@ -1,5 +1,6 @@
 "use client"
 
+import { useTransition } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
@@ -8,6 +9,8 @@ import {
 } from "lucide-react"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
+import { signOut } from "@/lib/auth/actions"
+import { useCartStore } from "@/stores/cart-store"
 import { cn } from "@/lib/utils"
 
 // Full seller-hub nav — only shown once someone actually has a seller_profiles row.
@@ -32,6 +35,8 @@ export function SellerShell({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const [signingOut, startSignOut] = useTransition()
+  const clearCart = useCartStore((s) => s.clearCart)
   const nav = isSeller ? [...SELLER_NAV, PROFILE_NAV] : [PROFILE_NAV]
 
   return (
@@ -86,9 +91,13 @@ export function SellerShell({
                 )
               })}
             </nav>
-            <button className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition-all hover:bg-white/5 hover:text-foreground">
+            <button
+              onClick={() => startSignOut(async () => { clearCart(); await signOut() })}
+              disabled={signingOut}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition-all hover:bg-white/5 hover:text-foreground disabled:opacity-60"
+            >
               <LogOut className="h-4 w-4" />
-              Sign out
+              {signingOut ? "Signing out…" : "Sign out"}
             </button>
           </div>
         </aside>

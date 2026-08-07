@@ -84,12 +84,11 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     }
   }, [isOpen])
 
+  // ⌘K itself is handled by the header (it owns the open/closed toggle).
+  // This modal only needs to close itself on Escape.
   useEffect(() => {
+    if (!isOpen) return
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault()
-        if (!isOpen) onClose() // caller toggles
-      }
       if (e.key === "Escape") onClose()
     }
     window.addEventListener("keydown", handler)

@@ -61,11 +61,17 @@ export async function signInWithPassword(
     return { ok: false, error: error.message }
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", data.user.id)
     .single()
+
+  if (profileError) {
+    // Landing a real seller/admin/support user on /account because this read
+    // hiccuped is the exact "dumped on a default account" bug — log it loudly.
+    console.error("signInWithPassword: profile lookup failed for", data.user.id, profileError)
+  }
 
   revalidatePath("/", "layout")
   redirect(next || ROLE_HOME[profile?.role ?? "customer"] || "/account")

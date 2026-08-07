@@ -35,7 +35,7 @@ export function useCollection(tokenIds: string[], userId?: string | null) {
 
     Promise.all(
       tokenIds.map(async (tokenId) => {
-        const provenance = await getProvenance(tokenId)
+        const provenance = await getProvenance(tokenId).catch(() => null)
         const verified = provenance?.owner?.toLowerCase() === myAddress
         return [tokenId, { tokenId, provenance, verified }] as const
       }),

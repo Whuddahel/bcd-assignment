@@ -78,11 +78,22 @@ export async function middleware(request: NextRequest) {
   }
 
   // Verify the user's role against the guard
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single()
+
+  // A transient query failure (network blip, momentary DB hiccup) is not the
+  // same thing as "wrong role" — bouncing a real seller/admin/support user to
+  // "/" on every such blip is exactly the "action resets me to a default
+  // account" symptom. RLS is the real security boundary (see requireUser and
+  // the Postgres policies), so on a genuine fetch error we fail OPEN here and
+  // let the page-level guard / RLS make the real call, instead of guessing.
+  if (profileError) {
+    console.error("middleware: profile role lookup failed, allowing request through", profileError)
+    return response
+  }
 
   // Signed in but wrong role — bounce to their own home rather than sign-in,
   // which would be nonsense for someone who already has a session.

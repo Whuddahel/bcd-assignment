@@ -85,6 +85,7 @@ export type AdminStats = {
   totalRevenue: number
   totalOrders: number
   pendingApprovals: number
+  pendingProducts: number
   openTickets: number
   monthlyRevenue: { month: string; revenue: number }[]
 }
@@ -97,6 +98,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     { count: totalSellers },
     { count: totalOrders },
     { count: pendingApprovals },
+    { count: pendingProducts },
     { count: openTickets },
     { data: orders },
   ] = await Promise.all([
@@ -104,6 +106,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     supabase.from("seller_profiles").select("id", { count: "exact", head: true }),
     supabase.from("orders").select("id", { count: "exact", head: true }),
     supabase.from("seller_profiles").select("id", { count: "exact", head: true }).eq("verified", false),
+    supabase.from("products").select("id", { count: "exact", head: true }).eq("status", "pending_review"),
     supabase.from("support_tickets").select("id", { count: "exact", head: true }).in("status", ["open", "in_progress"]),
     supabase.from("orders").select("total_amount, created_at").neq("status", "cancelled").neq("status", "refunded"),
   ])
@@ -117,6 +120,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     totalRevenue,
     totalOrders: totalOrders ?? 0,
     pendingApprovals: pendingApprovals ?? 0,
+    pendingProducts: pendingProducts ?? 0,
     openTickets: openTickets ?? 0,
     monthlyRevenue: monthlySeries(orderRows),
   }

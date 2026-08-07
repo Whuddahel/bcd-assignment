@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useRef, useState } from "react"
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion"
+import { motion, useMotionValue, useSpring } from "framer-motion"
 import { Heart, Shield, CheckCircle, ShoppingCart, Eye } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn, formatPrice } from "@/lib/utils"
@@ -188,14 +188,10 @@ export function ProductCard({ product, index = 0, wishlistDefault = false }: Pro
                 </div>
               )}
 
-              {/* Add-to-cart hover reveal */}
+              {/* Add-to-cart — always visible on touch (no hover there); fades
+                  in on hover for pointer devices. */}
               {product.status !== "sold" && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : 8 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute bottom-3 right-3 z-10"
-                >
+                <div className="absolute bottom-3 right-3 z-10 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100">
                   <button
                     onClick={handleAddToCart}
                     className="flex items-center gap-1.5 rounded-full bg-violet-500/90 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition-all hover:bg-violet-500"
@@ -204,7 +200,7 @@ export function ProductCard({ product, index = 0, wishlistDefault = false }: Pro
                     <ShoppingCart className="h-3.5 w-3.5" />
                     Add to cart
                   </button>
-                </motion.div>
+                </div>
               )}
 
               {/* View count — top right on hover */}
